@@ -1107,7 +1107,11 @@ function buildLB(players){
 function loadLB(){
   db.collection('users').orderBy('rating','desc').limit(20).get().then(function(snap){
     var players=FAKE_LB.slice();
-    snap.docs.forEach(function(d){var u=Object.assign({uid:d.id},d.data());u.u=u.username;u.r=u.rating;u.w=u.wins;u.c=u.coins;if(!players.find(function(p){return p.u===u.u;}))players.push(u);});
+    snap.docs.forEach(function(d){var u=Object.assign({uid:d.id},d.data());u.u=u.username;u.r=u.rating;u.w=u.wins;u.c=u.coins;
+      // Deduplicate by username AND email to prevent double entries
+      var dup=players.find(function(p){return p.u===u.u||(u.email&&p.email===u.email);});
+      if(!dup)players.push(u);
+    });
     players.sort(function(a,b){return(b.r||b.rating||0)-(a.r||a.rating||0);});
     buildLB(players);buildTicker(players);
   }).catch(function(){buildLB(FAKE_LB);buildTicker(FAKE_LB);});
@@ -1428,18 +1432,25 @@ function doGoogle(){
     // First check if profile exists
     return db.collection('users').doc(u.uid).get().then(function(snap){
       if(!snap.exists){
-        var uname=(u.displayName||u.email.split('@')[0]).replace(/[<>"'&]/g,'').trim()||'Player';
-        // User is authenticated so write is allowed
-        return db.collection('users').doc(u.uid).set({
-          username:uname,email:u.email,coins:0,rating:0,wins:0,losses:0,
-          phone:'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-          lastDaily:null,emailVerified:true
-        }).then(function(){
-          toast('Welcome '+uname+'! 👋','ok');
-        }).catch(function(err){
-          // Profile write failed but auth succeeded — still let them in
-          console.warn('Profile write failed:',err.message);
-          toast('Welcome! (Profile will sync shortly)','ok');
+        // Check if a doc already exists with this email (from email signup)
+        return db.collection('users').where('email','==',u.email).limit(1).get().then(function(emailSnap){
+          if(!emailSnap.empty){
+            // Doc exists by email match — update it to link with Google UID if needed
+            toast('Welcome back, '+safeText(emailSnap.docs[0].data().username||'')+'! 👋','ok');
+            return;
+          }
+          // Truly new user — create their profile
+          var uname=(u.displayName||u.email.split('@')[0]).replace(/[<>"'&]/g,'').trim()||'Player';
+          return db.collection('users').doc(u.uid).set({
+            username:uname,email:u.email,coins:0,rating:0,wins:0,losses:0,
+            phone:'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+            lastDaily:null,emailVerified:true
+          }).then(function(){
+            toast('Welcome '+uname+'! 👋','ok');
+          }).catch(function(err){
+            console.warn('Profile write failed:',err.message);
+            toast('Welcome!','ok');
+          });
         });
       } else {
         toast('Welcome back, '+safeText(snap.data().username||'')+'! 👋','ok');
@@ -1512,7 +1523,9 @@ auth.onAuthStateChanged(function(user){
   var hRight=document.getElementById('headerRight'),gNav=document.getElementById('guestNav'),sidebar=document.getElementById('sidebar');
   if(user){
     db.collection('users').doc(user.uid).get().then(function(snap){
-      var data=snap.exists?snap.data():{username:user.displayName||'Player',coins:0,rating:0,wins:0,losses:0};
+      // IMPORTANT: Never auto-create a doc here — signup functions handle doc creation
+      // Only read existing data; use safe defaults in memory only if doc missing
+      var data=snap.exists?snap.data():{username:user.displayName||user.email||'Player',coins:0,rating:0,wins:0,losses:0};
       window.currentUserData=data;
       var sbn=document.getElementById('sb-name');if(sbn)sbn.textContent=safeText(data.username||'—');
       var t=getTier(data.rating||1200);
