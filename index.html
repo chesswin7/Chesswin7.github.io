@@ -212,8 +212,8 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
 .theme-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;text-align:center;transition:all .2s}
 .theme-card:hover,.theme-card.active{border-color:var(--accent)}
-.theme-preview{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,40px);border-radius:6px;overflow:hidden;margin-bottom:12px}
-.theme-sq{width:100%;height:40px;display:block}
+.theme-preview{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border-radius:6px;overflow:hidden;margin-bottom:12px;aspect-ratio:1;width:100%}
+.theme-sq{width:100%;height:100%;display:block}
 .theme-name{font-size:13px;font-weight:700;color:var(--muted);margin-top:4px}
 .theme-card.active .theme-name{color:var(--accent)}
 .sb-sub{padding:9px 16px 9px 32px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;display:block}
@@ -419,7 +419,6 @@ header{padding:0 10px}
     </div>
     <div class="sb-section">Main</div>
     <div class="sb-link" onclick="goPage('home');closeMobDrawer()"><span class="sb-icon">🏠</span>Home</div>
-    <div class="sb-link" onclick="goPage('play');closeMobDrawer()"><span class="sb-icon">♟</span>Play</div>
     <div class="sb-link" onclick="goTourney('1v1');closeMobDrawer()"><span class="sb-icon">⚔️</span>1 vs 1</div>
     <div class="sb-link" onclick="toggleMobTourn(event)"><span class="sb-icon">🏆</span>Tournaments <span style="margin-left:auto;font-size:10px">▾</span></div>
     <div id="mobTournDrop" style="display:none;background:var(--surface2);border-left:3px solid var(--accent)">
@@ -498,7 +497,6 @@ header{padding:0 10px}
   </div>
   <div class="sb-section">Main</div>
   <div class="sb-link active" onclick="goPage('home',this)"><span class="sb-icon">🏠</span>Home</div>
-  <div class="sb-link" onclick="goPage('play',this)"><span class="sb-icon">♟</span>Play</div>
   <div class="sb-link" onclick="goTourney('1v1')"><span class="sb-icon">⚔️</span>1 vs 1</div>
   <div class="sb-link" onclick="toggleTournDrop(event,this)" id="sbTourn"><span class="sb-icon">🏆</span>Tournaments <span style="margin-left:auto;font-size:10px">▾</span></div>
   <div id="sbTournDrop" style="display:none;background:var(--surface2);border-left:3px solid var(--accent)">
@@ -682,25 +680,25 @@ header{padding:0 10px}
   <div class="promo-page">
     <div class="promo-grid">
       <div class="promo-item wide promo-banner">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/LB.png" alt="Leaderboard Promotion" style="aspect-ratio:1167/933;object-fit:cover">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/LB.png" alt="Leaderboard Promotion" style="aspect-ratio:1167/933;object-fit:cover">
       </div>
       <div class="promo-item square" onclick="openLightbox(this.querySelector('img').src)">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/1P.png" alt="1% Promotion">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/1P.png" alt="1% Promotion">
       </div>
       <div class="promo-item square" onclick="openLightbox(this.querySelector('img').src)">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/15P.png" alt="15% Promotion">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/15P.png" alt="15% Promotion">
       </div>
       <div class="promo-item square" onclick="openLightbox(this.querySelector('img').src)">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/2P.png" alt="2% Promotion">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/2P.png" alt="2% Promotion">
       </div>
       <div class="promo-item square" onclick="openLightbox(this.querySelector('img').src)">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/25P.png" alt="25% Promotion">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/25P.png" alt="25% Promotion">
       </div>
       <div class="promo-item square" onclick="openLightbox(this.querySelector('img').src)">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/3P.png" alt="3% Promotion">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/3P.png" alt="3% Promotion">
       </div>
       <div class="promo-item square" onclick="openLightbox(this.querySelector('img').src)">
-        <img src="https://raw.githubusercontent.com/chesswin7/chesswin7.github.io/cc731950cbb0c83f808961c418edfc764cd047a6/promotions/5P.png" alt="5% Promotion">
+        <img src="https://cdn.jsdelivr.net/gh/chesswin7/chesswin7.github.io@cc731950cbb0c83f808961c418edfc764cd047a6/promotions/5P.png" alt="5% Promotion">
       </div>
     </div>
   </div>
@@ -1496,11 +1494,38 @@ function showLegal(key){var d=LEGAL[key];if(!d)return;document.getElementById('l
 // Theme picker
 function buildThemePicker(){
   var grid=document.getElementById('themeGrid');if(!grid)return;grid.innerHTML='';
+  // Starting position piece layout for theme preview
+  var PIECE_LAYOUT=[
+    'R','N','B','Q','K','B','N','R',
+    'P','P','P','P','P','P','P','P',
+    '','','','','','','','',
+    '','','','','','','','',
+    '','','','','','','','',
+    '','','','','','','','',
+    'P','P','P','P','P','P','P','P',
+    'R','N','B','Q','K','B','N','R'
+  ];
+  var PIECE_COLORS=['b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','b','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w'];
   THEMES.forEach(function(th,i){
     var card=document.createElement('div');card.className='theme-card'+(i===activeTheme?' active':'');card.id='tc-'+i;
     card.onclick=function(){applyTheme(i);};
     var preview=document.createElement('div');preview.className='theme-preview';
-    for(var r=0;r<2;r++)for(var c=0;c<4;c++){var sq=document.createElement('div');sq.className='theme-sq';sq.style.background=((r+c)%2===0)?th.dark:th.light;preview.appendChild(sq);}
+    for(var r=0;r<8;r++){
+      for(var c=0;c<8;c++){
+        var idx=r*8+c;
+        var sq=document.createElement('div');sq.className='theme-sq';
+        sq.style.background=((r+c)%2===0)?th.dark:th.light;
+        var piece=PIECE_LAYOUT[idx];
+        var col=PIECE_COLORS[idx];
+        if(piece&&col){
+          var img=document.createElement('img');
+          img.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+col+piece.toLowerCase()+'.png';
+          img.style.cssText='width:100%;height:100%;object-fit:contain;display:block;pointer-events:none';
+          sq.appendChild(img);
+        }
+        preview.appendChild(sq);
+      }
+    }
     var name=makeSafeEl('div','theme-name',th.name);
     card.appendChild(preview);card.appendChild(name);grid.appendChild(card);});
 }
