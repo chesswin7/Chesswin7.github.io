@@ -965,7 +965,7 @@ function evlAdv(b){
 }
 function mmAdv(b,d,al,be,mx,ep,cr,startTime){
   // Timeout protection: never run > 2.5 seconds
-  if(Date.now()-startTime>5000)return mx?al:be;
+  if(Date.now()-startTime>1800)return mx?al:be;
   var col=mx?'w':'b',mvs=allL(col,b,ep,cr);
   if(d===0||!mvs.length){
     if(!mvs.length){var k=kng(col,b);if(atk(k,Op(col),b,ep,cr))return mx?-99999:99999;return 0;}
@@ -1001,10 +1001,10 @@ function mmAdv(b,d,al,be,mx,ep,cr,startTime){
 }
 function bestAI(b,d,ep,cr){
   var mvs=allL('b',b,ep,cr);if(!mvs.length)return null;
-  // Always maximum strength — depth 6, no randomness
-  var depth=6;
+  // Strong AI but fast response — depth 4, max 1.5s
+  var depth=4;
   var startTime=Date.now();
-  var timeLimit=4500;
+  var timeLimit=1500;
   var best=Infinity,bm=mvs[0];
 
   // Move ordering for hard mode: captures, checks, then quiet moves
@@ -1081,8 +1081,8 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
     if(brd[idx]){
       var sp=document.createElement('img');
-      var pk=brd[idx].c+brd[idx].n;
-      sp.src='https://lichess1.org/assets/piece/cburnett/'+pk+'.svg';
+      var pk=brd[idx].c+brd[idx].n.toLowerCase();
+      sp.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';
       sp.alt=pk;sp.style.cssText='width:88%;height:88%;object-fit:contain;pointer-events:none;user-select:none;display:block;margin:auto';
       sq.appendChild(sp);
     }
@@ -1195,8 +1195,8 @@ function renderMiniBoard(data){
     sq.style.cssText='background:'+(((r+c)%2===0)?data.th.dark:data.th.light)+';position:relative;overflow:hidden';
     if(data.board[i]){
       var sp=document.createElement('img');
-      var pk=data.board[i].c+data.board[i].n;
-      sp.src='https://lichess1.org/assets/piece/cburnett/'+pk+'.svg';
+      var pk=data.board[i].c+data.board[i].n.toLowerCase();
+      sp.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';
       sp.alt=pk;
       sp.style.cssText='width:88%;height:88%;object-fit:contain;display:block;margin:auto;transition:opacity 0.5s ease,transform 0.5s ease';
       sq.appendChild(sp);
@@ -1218,8 +1218,8 @@ function updateMiniSquare(mb, idx, piece, th, fadeIn){
   if(piece){
     setTimeout(function(){
       var sp=document.createElement('img');
-      var pk=piece.c+piece.n;
-      sp.src='https://lichess1.org/assets/piece/cburnett/'+pk+'.svg';
+      var pk=piece.c+piece.n.toLowerCase();
+      sp.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';
       sp.alt=pk;
       sp.style.cssText='width:88%;height:88%;object-fit:contain;display:block;margin:auto;transition:opacity 0.5s ease,transform 0.5s ease;opacity:0;transform:scale(0.5)';
       sq.appendChild(sp);
@@ -1553,7 +1553,7 @@ function buildThemePicker(){
         var col=PIECE_COLORS[idx];
         if(piece&&col){
           var img=document.createElement('img');
-          img.src='https://lichess1.org/assets/piece/cburnett/'+col+piece+'.svg';
+          img.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+col+piece.toLowerCase()+'.png';
           img.style.cssText='width:100%;height:100%;object-fit:contain;display:block;pointer-events:none';
           sq.appendChild(img);
         }
@@ -2113,7 +2113,7 @@ auth.onAuthStateChanged(function(user){
       var sbn=document.getElementById('sb-name');if(sbn)sbn.textContent=safeText(data.username||'—');
       var t=getTier(data.rating||1200);
       var sbt=document.getElementById('sb-tier');if(sbt)sbt.textContent=t.i+' '+t.n;
-      if(sidebar)sidebar.classList.add('show');if(gNav)gNav.style.display='none';var sbBtn=document.getElementById('sbReopenBtn');if(sbBtn)sbBtn.style.display='none';
+      if(sidebar)sidebar.classList.add('show');if(gNav)gNav.style.display='none';var sbBtn=document.getElementById('sbReopenBtn');if(sbBtn)sbBtn.style.display='none';var pb=document.getElementById('promoBtn');if(pb)pb.style.display='none';
       if(hRight)buildNavbarAuth(data);
       updateProfilePage(data);updateStatsPage(data);checkDailyBtn(data);loadLB();updateMobDrawer(user,data);
       // Load deposit wallets immediately on login
@@ -2121,7 +2121,7 @@ auth.onAuthStateChanged(function(user){
     });
   }else{
     window.currentUserData=null;
-    if(sidebar)sidebar.classList.remove('show');if(gNav)gNav.style.display='flex';
+    if(sidebar)sidebar.classList.remove('show');if(gNav)gNav.style.display='flex';var pb2=document.getElementById('promoBtn');if(pb2)pb2.style.display='';
     updateMobDrawer(null,null);
     if(hRight)hRight.innerHTML='<div style="display:flex;gap:8px"><button class="btn btn-o btn-sm" onclick="openAuth(\'login\')">Login</button><button class="btn btn-sm" onclick="openAuth(\'signup\')">Sign Up</button></div>';
     loadLB();
@@ -2272,12 +2272,17 @@ function loadPlatformWallets(){
   var container=document.getElementById('platformWallets');
   if(!container)return;
   container.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">Loading wallets...</div>';
-  db.collection('settings').doc('wallets').get().then(function(snap){
-    var wallets=snap.exists&&snap.data().list?snap.data().list:[];
-    if(wallets.length===0){
-      wallets=[{name:'TRC20 (USDT)',address:'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE'}];
+  // Try loading from Firestore, show default if fails (permissions/network)
+  var showWallets=function(wallets){
+    if(!wallets||wallets.length===0){
+      wallets=[{name:'USDT TRC20',address:'Contact admin for wallet address'}];
     }
-    container.innerHTML='<p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">📋 Send USDT to one of these wallets:</p>';
+    var c2=document.getElementById('platformWallets');if(!c2)return;
+    c2.innerHTML='';
+    var hdr=document.createElement('p');
+    hdr.style.cssText='font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px';
+    hdr.textContent='📋 Send USDT to one of these wallets:';
+    c2.appendChild(hdr);
     wallets.forEach(function(w,i){
       var wDiv=document.createElement('div');
       wDiv.style.cssText='background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:16px 18px;margin-bottom:10px';
@@ -2299,8 +2304,14 @@ function loadPlatformWallets(){
       wDiv.appendChild(addrBox);
       container.appendChild(wDiv);
     });
-  }).catch(function(){
-    container.innerHTML='<div style="color:var(--muted);font-size:13px">⚠ Could not load wallet addresses. Please contact support.</div>';
+  };
+  db.collection('settings').doc('wallets').get().then(function(snap){
+    showWallets(snap.exists&&snap.data().list?snap.data().list:[]);
+  }).catch(function(e){
+    console.warn('Wallet load error:',e.message);
+    // Show default message if Firestore fails
+    var c3=document.getElementById('platformWallets');
+    if(c3)c3.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:16px 18px"><div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:8px">💬 Contact Support for Wallet Address</div><div style="font-size:13px;color:var(--muted)">Open live chat or contact admin to get the deposit wallet address.</div></div>';
   });
 }
 
