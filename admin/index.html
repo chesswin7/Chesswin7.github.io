@@ -701,21 +701,22 @@ function loadWallets(){
 }
 
 var CRYPTO_OPTIONS=[
-  {label:'USDT (TRC20)',icon:'💚'},
-  {label:'USDT (ERC20)',icon:'💙'},
-  {label:'USDT (BEP20 - BSC)',icon:'💛'},
-  {label:'Bitcoin (BTC)',icon:'🟠'},
-  {label:'Ethereum (ETH)',icon:'🔵'},
-  {label:'BNB (BEP20)',icon:'🟡'},
-  {label:'TRON (TRX)',icon:'🔴'},
-  {label:'Solana (SOL)',icon:'🟣'},
-  {label:'Litecoin (LTC)',icon:'⚪'},
-  {label:'Ripple (XRP)',icon:'🔷'},
-  {label:'Dogecoin (DOGE)',icon:'🐕'},
-  {label:'Polygon (MATIC)',icon:'🟪'},
-  {label:'Cardano (ADA)',icon:'🔹'},
-  {label:'Avalanche (AVAX)',icon:'🔺'},
-  {label:'Custom',icon:'🔧'},
+  {label:'USDT (TRC20)',icon:'<img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'USDT'},
+  {label:'USDT (ERC20)',icon:'<img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'USDT'},
+  {label:'USDT (BEP20 - BSC)',icon:'<img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'USDT'},
+  {label:'Bitcoin (BTC)',icon:'<img src="https://cryptologos.cc/logos/bitcoin-btc-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'BTC'},
+  {label:'Ethereum (ETH)',icon:'<img src="https://cryptologos.cc/logos/ethereum-eth-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'ETH'},
+  {label:'BNB (BEP20)',icon:'<img src="https://cryptologos.cc/logos/bnb-bnb-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'BNB'},
+  {label:'TRON (TRX)',icon:'<img src="https://cryptologos.cc/logos/tron-trx-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'TRX'},
+  {label:'Solana (SOL)',icon:'<img src="https://cryptologos.cc/logos/solana-sol-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'SOL'},
+  {label:'Litecoin (LTC)',icon:'<img src="https://cryptologos.cc/logos/litecoin-ltc-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'LTC'},
+  {label:'Ripple (XRP)',icon:'<img src="https://cryptologos.cc/logos/xrp-xrp-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'XRP'},
+  {label:'Dogecoin (DOGE)',icon:'<img src="https://cryptologos.cc/logos/dogecoin-doge-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'DOGE'},
+  {label:'Polygon (MATIC)',icon:'<img src="https://cryptologos.cc/logos/polygon-matic-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'MATIC'},
+  {label:'Cardano (ADA)',icon:'<img src="https://cryptologos.cc/logos/cardano-ada-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'ADA'},
+  {label:'Avalanche (AVAX)',icon:'<img src="https://cryptologos.cc/logos/avalanche-avax-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'AVAX'},
+  {label:'Shiba Inu (SHIB)',icon:'<img src="https://cryptologos.cc/logos/shiba-inu-shib-logo.svg" style="width:18px;height:18px;vertical-align:middle;margin-right:4px">',ticker:'SHIB'},
+  {label:'Custom',icon:'🔧 ',ticker:''},
 ];
 
 function renderWalletList(){
@@ -735,7 +736,8 @@ function renderWalletList(){
     CRYPTO_OPTIONS.forEach(function(opt){
       var option=document.createElement('option');
       option.value=opt.label;
-      option.textContent=opt.icon+' '+opt.label;
+      // Options can't render HTML images, use ticker as prefix instead
+      option.textContent=(opt.ticker?'['+opt.ticker+'] ':'')+opt.label;
       if(w.name===opt.label)option.selected=true;
       sel.appendChild(option);
     });
@@ -776,6 +778,19 @@ function renderWalletList(){
     rmBtn.style.cssText='background:var(--red);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;font-weight:700;flex-shrink:0';
     rmBtn.onclick=function(){removeWallet(i);};
 
+    // Show crypto icon next to dropdown
+    var iconDiv=document.createElement('div');
+    iconDiv.style.cssText='width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center';
+    var matchedOpt=CRYPTO_OPTIONS.find(function(o){return o.label===w.name;});
+    if(matchedOpt&&matchedOpt.icon.indexOf('<img')===0){
+      iconDiv.innerHTML=matchedOpt.icon.replace('margin-right:4px','margin-right:0');
+    }else{iconDiv.textContent='🔧';}
+    sel.addEventListener('change',function(){
+      var mo=CRYPTO_OPTIONS.find(function(o){return o.label===this.value;}.bind(this));
+      if(mo&&mo.icon.indexOf('<img')===0)iconDiv.innerHTML=mo.icon.replace('margin-right:4px','margin-right:0');
+      else iconDiv.textContent='🔧';
+    });
+    row.appendChild(iconDiv);
     row.appendChild(sel);
     row.appendChild(customInp);
     row.appendChild(addrInp);
@@ -807,7 +822,7 @@ function saveWallets(){
   }).then(function(){
     _wallets=valid;
     renderWalletList();
-    toast('✓ Wallets saved! Users will see these on the Deposit page','ok');
+    toast('✓ Wallets saved! Make sure Firestore rules allow public read on /settings/{doc}','ok');
   }).catch(function(e){toast('Error: '+e.message,'er');});
 }
 
