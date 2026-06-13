@@ -367,7 +367,21 @@ header{padding:0 10px}
 </style>
 </head>
 <body>
-
+<!-- SLIM TOP LOADING BAR -->
+<div id="topLoadBar" style="position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,#00e701,#1a9aef);z-index:99999;transition:opacity 0.3s"></div>
+<script>
+// Remove loading bar when auth resolves OR after 1.5s max
+var _loadBarTimer=setTimeout(function(){
+  var b=document.getElementById('topLoadBar');
+  if(b){b.style.opacity='0';setTimeout(function(){if(b.parentNode)b.parentNode.removeChild(b);},300);}
+  var hr=document.getElementById('headerRight');if(hr)hr.style.visibility='visible';
+},1500);
+function _removeLoadBar(){
+  clearTimeout(_loadBarTimer);
+  var b=document.getElementById('topLoadBar');
+  if(b){b.style.opacity='0';setTimeout(function(){if(b.parentNode)b.parentNode.removeChild(b);},300);}
+}
+</script>
 <!-- AUTH MODAL -->
 <div class="modal" id="authModal">
   <div class="modal-box">
@@ -420,7 +434,7 @@ header{padding:0 10px}
       <button class="btn btn-sm" style="flex:1;background:#00e701;color:#000;font-weight:800" onclick="goPage('deposit');closeMobDrawer()">💰 Deposit</button>
       <button class="btn btn-sm btn-o" style="flex:1;font-weight:800" onclick="goPage('withdrawal');closeMobDrawer()">💸 Withdraw</button>
     </div>
-    <div class="sb-section">Main</div>
+    <div class="sb-section" data-sec="main">Main</div>
     <div class="sb-link" onclick="goPage('home');closeMobDrawer()"><span class="sb-icon">🏠</span>Home</div>
     <div class="sb-link" onclick="goTourney('1v1');closeMobDrawer()"><span class="sb-icon">⚔️</span>1 vs 1</div>
     <div class="sb-link" onclick="toggleMobTourn(event)"><span class="sb-icon">🏆</span>Tournaments <span style="margin-left:auto;font-size:10px">▾</span></div>
@@ -441,15 +455,15 @@ header{padding:0 10px}
     </div>
     <div class="sb-link" onclick="goPage('promotions');closeMobDrawer()"><span class="sb-icon">🎁</span>Promotions</div>
     <div class="sb-section">Finance</div>
-    <div class="sb-link" onclick="goPage('deposit');closeMobDrawer()"><span class="sb-icon">💰</span>Deposit</div>
-    <div class="sb-link" onclick="goPage('withdrawal');closeMobDrawer()"><span class="sb-icon">💸</span>Withdraw</div>
+    <div class="sb-link" onclick="goPage('deposit');closeMobDrawer()" data-link="sb_deposit"><span class="sb-icon">💰</span>Deposit</div>
+    <div class="sb-link" onclick="goPage('withdrawal');closeMobDrawer()" data-link="sb_withdraw"><span class="sb-icon">💸</span>Withdraw</div>
     <div class="sb-section">Account</div>
-    <div class="sb-link" onclick="goPage('stats');closeMobDrawer()"><span class="sb-icon">📊</span>Stats</div>
-    <div class="sb-link" onclick="goPage('profile');closeMobDrawer()"><span class="sb-icon">👤</span>Profile</div>
+    <div class="sb-link" onclick="goPage('stats');closeMobDrawer()" data-link="sb_stats"><span class="sb-icon">📊</span>Stats</div>
+    <div class="sb-link" onclick="goPage('profile');closeMobDrawer()" data-link="sb_profile"><span class="sb-icon">👤</span>Profile</div>
     <div class="sb-link" onclick="goPage('theme');closeMobDrawer()"><span class="sb-icon">🎨</span>Board Theme</div>
-    <div class="sb-section">🌐 Language</div>
+    <div class="sb-section" data-sec="more_lang">🌐 Language</div>
     <div class="sb-lang-list" id="mobLangGrid"></div>
-    <div class="sb-section">Support</div>
+    <div class="sb-section" data-sec="support">Support</div>
     <div class="sb-support-btn" onclick="openSupport();closeMobDrawer()">
       <span class="sb-sup-dot"></span>
       <div>
@@ -477,7 +491,7 @@ header{padding:0 10px}
     </nav>
     <a id="promoBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#f0a500,#FFD700);color:#000;font-weight:800" onclick="goPage('promotions')">🎁 Promotions</a>
   </div>
-  <div id="headerRight" style="visibility:hidden">
+  <div id="headerRight" style="visibility:hidden;transition:visibility 0s">
     <div style="display:flex;gap:8px">
       <button class="btn btn-o btn-sm" onclick="openAuth('login')">Login</button>
       <button class="btn btn-sm" onclick="openAuth('signup')">Sign Up</button>
@@ -501,8 +515,8 @@ header{padding:0 10px}
     <button onclick="closeSidebar()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
   </div>
   <div class="sb-section" data-sec="main">Main</div>
-  <div class="sb-link active" onclick="goPage('home',this)"><span class="sb-icon">🏠</span>Home</div>
-  <div class="sb-link" onclick="goTourney('1v1')"><span class="sb-icon">⚔️</span>1 vs 1</div>
+  <div class="sb-link active" onclick="goPage('home',this)" data-link="sb_home"><span class="sb-icon">🏠</span>Home</div>
+  <div class="sb-link" onclick="goTourney('1v1')" data-link="tourn_1v1"><span class="sb-icon">⚔️</span>1 vs 1</div>
   <div class="sb-link" onclick="toggleTournDrop(event,this)" id="sbTourn"><span class="sb-icon">🏆</span>Tournaments <span style="margin-left:auto;font-size:10px">▾</span></div>
   <div id="sbTournDrop" style="display:none;background:var(--surface2);border-left:3px solid var(--accent)">
     <div class="sb-sub" onclick="goTourney('swiss')">🔄 Swiss Tournament</div>
@@ -519,14 +533,14 @@ header{padding:0 10px}
     <div class="sb-sub" onclick="goTourney('autumn')">🍂 Autumn Open</div>
     <div class="sb-sub" onclick="goTourney('winter')">❄️ Winter Open</div>
   </div>
-  <div class="sb-link" onclick="goPage('promotions',this)"><span class="sb-icon">🎁</span>Promotions</div>
+  <div class="sb-link" onclick="goPage('promotions',this)" data-link="sb_promotions"><span class="sb-icon">🎁</span>Promotions</div>
   <div class="sb-section" data-sec="finance">Finance</div>
-  <div class="sb-link" onclick="goPage('deposit',this)"><span class="sb-icon">💰</span>Deposit</div>
-  <div class="sb-link" onclick="goPage('withdrawal',this)"><span class="sb-icon">💸</span>Withdraw</div>
+  <div class="sb-link" onclick="goPage('deposit',this)" data-link="sb_deposit"><span class="sb-icon">💰</span>Deposit</div>
+  <div class="sb-link" onclick="goPage('withdrawal',this)" data-link="sb_withdraw"><span class="sb-icon">💸</span>Withdraw</div>
   <div class="sb-section" data-sec="account">Account</div>
-  <div class="sb-link" onclick="goPage('stats',this)"><span class="sb-icon">📊</span>Stats</div>
-  <div class="sb-link" onclick="goPage('profile',this)"><span class="sb-icon">👤</span>Profile</div>
-  <div class="sb-link" onclick="goPage('theme',this)"><span class="sb-icon">🎨</span>Board Theme</div>
+  <div class="sb-link" onclick="goPage('stats',this)" data-link="sb_stats"><span class="sb-icon">📊</span>Stats</div>
+  <div class="sb-link" onclick="goPage('profile',this)" data-link="sb_profile"><span class="sb-icon">👤</span>Profile</div>
+  <div class="sb-link" onclick="goPage('theme',this)" data-link="sb_theme"><span class="sb-icon">🎨</span>Board Theme</div>
   <div class="sb-section" data-sec="more">More</div>
   <div class="sb-lang-wrap">
     <div class="sb-section" style="padding-top:0;padding-bottom:6px">🌐 Language</div>
@@ -719,8 +733,8 @@ header{padding:0 10px}
   </div>
   <div class="play-layout">
     <div class="play-board-wrap">
+      <div id="aiThinkBar" style="display:none;text-align:center;padding:8px 16px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:800;color:var(--accent2);letter-spacing:.02em">🤖 AI Thinking...</div>
       <div class="player-bar" id="oppBar"><span id="oppName">Opponent</span><span id="oppTimer">—</span></div>
-      <div id="aiThinkBar" style="display:none;text-align:center;padding:6px 12px;background:rgba(26,154,239,.12);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:700;color:var(--accent2);margin-top:-4px">🤖 AI is thinking...</div>
       <div style="display:flex;gap:8px;align-items:flex-start">
         <div style="display:flex;flex-direction:column;width:20px" id="p-ranks"></div>
         <div>
@@ -799,9 +813,9 @@ header{padding:0 10px}
   <div id="platformWallets" style="margin-bottom:20px"></div>
   <div class="finance-form">
     <h3>Submit Deposit Request</h3>
-    <div class="form-row"><label>Amount (USDT)</label><input type="number" id="dpAmt" placeholder="Min. 10 USDT" min="10"></div>
-    <div class="form-row"><label>Transaction ID / TxHash</label><input type="text" id="dpTx" placeholder="Paste your TxID here"></div>
-    <div class="form-row"><label>Note (Optional)</label><input type="text" id="dpNote" placeholder="e.g. TRC20"></div>
+    <div class="form-row"><label>Amount (USDT)</label><input type="number" id="dpAmt" placeholder="Min. 10 USDT" min="10" data-ph-key="dep_ph_amount"></div>
+    <div class="form-row"><label>Transaction ID / TxHash</label><input type="text" id="dpTx" placeholder="Paste your TxID here" data-ph-key="dep_ph_tx"></div>
+    <div class="form-row"><label>Note (Optional)</label><input type="text" id="dpNote" placeholder="e.g. TRC20" data-ph-key="dep_ph_note"></div>
     <div id="depNoteBox" style="background:var(--surface2);border-radius:var(--radius);padding:12px;font-size:13px;color:var(--muted);margin-bottom:16px">📌 Send USDT to our wallet above, then submit your TxID. Admin credits within 24h.</div>
     <button id="depSubmitBtn" class="btn" onclick="submitDeposit()">📤 Submit Request</button>
   </div>
@@ -815,8 +829,8 @@ header{padding:0 10px}
   <div class="finance-form">
     <h3>Submit Withdrawal Request</h3>
     <div class="balance-box" style="flex-wrap:wrap"><span class="bal-label">Available Balance</span><span class="bal-value" id="wdBal" style="font-size:16px;word-break:break-all">0 COINS</span></div>
-    <div class="form-row"><label>Amount (USDT)</label><input type="number" id="wdAmt" placeholder="Min. 10 USDT" min="10"></div>
-    <div class="form-row"><label>Wallet Address (TRC20/ERC20)</label><input type="text" id="wdWallet" placeholder="Your USDT wallet address"></div>
+    <div class="form-row"><label>Amount (USDT)</label><input type="number" id="wdAmt" placeholder="Min. 10 USDT" min="10" data-ph-key="wd_ph_amount"></div>
+    <div class="form-row"><label>Wallet Address (TRC20/ERC20)</label><input type="text" id="wdWallet" placeholder="Your USDT wallet address" data-ph-key="wd_ph_wallet"></div>
     <div id="wdNoteBox" style="background:var(--surface2);border-radius:var(--radius);padding:12px;font-size:13px;color:var(--muted);margin-bottom:16px">📌 5% platform fee deducted. 100 COINS → 95 USDT. Processing: 48h.</div>
     <button id="wdSubmitBtn" class="btn" onclick="submitWithdrawal()">📤 Submit Request</button>
   </div>
@@ -1140,30 +1154,34 @@ var pB=mkB(),pT='w',pSel=null,pLm=[],pLmv=null,pCr={wK:1,wQ:1,bK:1,bQ:1},pEp=nul
 function renderPlay(){
   renderBoard('pBoard',pB,pSel,pLm,pLmv,pColor==='b');
   setCoords('p-ranks','p-files',pColor==='b',55);
-  // Highlight king red if in check
-  highlightCheck();
+  // Apply check highlight AFTER board is built
+  setTimeout(highlightCheck,0);
 }
 function highlightCheck(){
   var board=document.getElementById('pBoard');if(!board)return;
+  var inCheck=false;
   ['w','b'].forEach(function(col){
     var k=kng(col,pB);
-    if(k>=0&&atk(k,Op(col),pB,pEp,pCr)){
-      var flip=pColor==='b';
-      var sqs=board.querySelectorAll('.sq');
-      sqs.forEach(function(sq){
-        if(parseInt(sq.dataset.i)===k){
-          sq.style.background='rgba(249,56,72,0.85)';
-          sq.style.boxShadow='inset 0 0 0 3px #f93848, 0 0 12px rgba(249,56,72,0.6)';
-          // Flash animation via JS since CSS animation resets on re-render
-          var flashes=0;
-          var flashInterval=setInterval(function(){
-            sq.style.background=flashes%2===0?'rgba(249,56,72,0.3)':'rgba(249,56,72,0.85)';
-            flashes++;
-            if(flashes>=6)clearInterval(flashInterval);
-          },150);
+    if(k<0||!atk(k,Op(col),pB,pEp,pCr))return;
+    inCheck=true;
+    var sqs=board.querySelectorAll('.sq');
+    sqs.forEach(function(sq){
+      if(parseInt(sq.dataset.i)!==k)return;
+      // Immediately set red background
+      sq.style.cssText+=';background:rgba(249,56,72,0.9)!important;box-shadow:inset 0 0 0 4px #f93848,0 0 16px rgba(249,56,72,0.8)!important;';
+      // Flash 3 times
+      var count=0;
+      var iv=setInterval(function(){
+        count++;
+        sq.style.background=count%2===0?'rgba(249,56,72,0.9)':'rgba(249,56,72,0.2)';
+        if(count>=5){
+          clearInterval(iv);
+          // Keep red solid after flashing
+          sq.style.background='rgba(249,56,72,0.75)';
+          sq.style.boxShadow='inset 0 0 0 4px #f93848';
         }
-      });
-    }
+      },200);
+    });
   });
 }
 function playCheckEnd(){var mv=allL(pT,pB,pEp,pCr),k=kng(pT,pB),inC=atk(k,Op(pT),pB,pEp,pCr);
@@ -2148,6 +2166,7 @@ auth.onAuthStateChanged(function(user){
   window.currentUser=user;
   var hRight=document.getElementById('headerRight'),gNav=document.getElementById('guestNav'),sidebar=document.getElementById('sidebar');
   if(hRight)hRight.style.visibility='visible';
+  if(window._removeLoadBar)_removeLoadBar();
   if(user){
     db.collection('users').doc(user.uid).get().then(function(snap){
       // IMPORTANT: Never auto-create a doc here — signup functions handle doc creation
@@ -2578,6 +2597,8 @@ en:{
   wd_note_text:'📌 5% platform fee deducted. 100 COINS → 95 USDT. Processing: 48h.',
   dep_submit:'📤 Submit Request',wd_submit:'📤 Submit Request',
   dep_hist_empty:'No deposits yet',wd_hist_empty:'No withdrawals yet',
+  dep_ph_amount:'Min. 10 USDT',dep_ph_tx:'Paste your TxID here',dep_ph_note:'Note (Optional)',
+  wd_ph_amount:'Min. 10 USDT',wd_ph_wallet:'Your USDT wallet address',
   login:'Login',signup:'Sign Up',deposit_btn:'💰 Deposit',withdraw_btn:'💸 Withdraw',
 },
 es:{
@@ -2636,7 +2657,9 @@ es:{
   dep_note_text:'📌 Envía USDT a nuestra billetera arriba, luego envía tu TxID. Admin acredita en 24h.',
   wd_note_text:'📌 Comisión 5%. 100 MONEDAS → 95 USDT. Procesamiento: 48h.',
   dep_submit:'📤 Enviar Solicitud',wd_submit:'📤 Enviar Solicitud',
-  dep_hist_empty:'Sin depósitos aún',wd_hist_empty:'Sin retiros aún',  login:'Iniciar Sesión',signup:'Registrarse',deposit_btn:'💰 Depósito',withdraw_btn:'💸 Retirar',
+  dep_hist_empty:'Sin depósitos aún',wd_hist_empty:'Sin retiros aún',
+  dep_ph_amount:'Mín. 10 USDT',dep_ph_tx:'Pega tu TxID aquí',dep_ph_note:'Nota (Opcional)',
+  wd_ph_amount:'Mín. 10 USDT',wd_ph_wallet:'Tu dirección de billetera USDT',  login:'Iniciar Sesión',signup:'Registrarse',deposit_btn:'💰 Depósito',withdraw_btn:'💸 Retirar',
 },
 ru:{
   tagline:'Играй в шахматы. Зарабатывай.',
@@ -2694,7 +2717,9 @@ ru:{
   dep_note_text:'📌 Отправьте криптовалюту на кошелёк выше, затем укажите TxID. Зачисление в течение 24ч.',
   wd_note_text:'📌 Комиссия 5%. 100 МОНЕТ → 95 USDT. Обработка: 48ч.',
   dep_submit:'📤 Отправить',wd_submit:'📤 Отправить',
-  dep_hist_empty:'Нет депозитов',wd_hist_empty:'Нет выводов',  login:'Войти',signup:'Регистрация',deposit_btn:'💰 Депозит',withdraw_btn:'💸 Вывод',
+  dep_hist_empty:'Нет депозитов',wd_hist_empty:'Нет выводов',
+  dep_ph_amount:'Мин. 10 USDT',dep_ph_tx:'Вставьте ваш TxID',dep_ph_note:'Примечание (необязательно)',
+  wd_ph_amount:'Мин. 10 USDT',wd_ph_wallet:'Адрес вашего USDT кошелька',  login:'Войти',signup:'Регистрация',deposit_btn:'💰 Депозит',withdraw_btn:'💸 Вывод',
 },
 ur:{
   tagline:'شطرنج کھیلیں۔ انعام کمائیں۔',
@@ -2752,7 +2777,9 @@ ur:{
   dep_note_text:'📌 اوپر دیے گئے والٹ پر کرپٹو بھیجیں، پھر TxID جمع کریں۔ 24 گھنٹے میں کریڈٹ ہوگا۔',
   wd_note_text:'📌 5% فیس کٹے گی۔ 100 کوائن → 95 USDT۔ پروسیسنگ: 48 گھنٹے۔',
   dep_submit:'📤 درخواست بھیجیں',wd_submit:'📤 درخواست بھیجیں',
-  dep_hist_empty:'کوئی ڈپازٹ نہیں',wd_hist_empty:'کوئی ود ڈرال نہیں',  login:'لاگ ان',signup:'سائن اپ',deposit_btn:'💰 جمع',withdraw_btn:'💸 نکالیں',
+  dep_hist_empty:'کوئی ڈپازٹ نہیں',wd_hist_empty:'کوئی ود ڈرال نہیں',
+  dep_ph_amount:'کم از کم 10 USDT',dep_ph_tx:'اپنا TxID یہاں پیسٹ کریں',dep_ph_note:'نوٹ (اختیاری)',
+  wd_ph_amount:'کم از کم 10 USDT',wd_ph_wallet:'آپ کا USDT والٹ ایڈریس',  login:'لاگ ان',signup:'سائن اپ',deposit_btn:'💰 جمع',withdraw_btn:'💸 نکالیں',
 },
 zh:{
   tagline:'下棋。赚取真实奖励。',subtitle:'挑战全球真实玩家，赢取USDT。1金币 = 1 USDT。',
@@ -2797,7 +2824,9 @@ zh:{
   dep_note_text:'📌 将加密货币发送到上方钱包，然后提交您的TxID。管理员24小时内到账。',
   wd_note_text:'📌 扣除5%平台费。100金币 → 95 USDT。处理时间：48小时。',
   dep_submit:'📤 提交申请',wd_submit:'📤 提交申请',
-  dep_hist_empty:'暂无存款',wd_hist_empty:'暂无提款',},
+  dep_hist_empty:'暂无存款',wd_hist_empty:'暂无提款',
+  dep_ph_amount:'最低 10 USDT',dep_ph_tx:'在此粘贴您的TxID',dep_ph_note:'备注（可选）',
+  wd_ph_amount:'最低 10 USDT',wd_ph_wallet:'您的USDT钱包地址',},
 ja:{
   tagline:'チェスで遊んで。報酬を稼いで。',subtitle:'世界中のプレイヤーと対戦してUSDTを獲得。1コイン = 1 USDT。',
   playNow:'▶ プレイ',viewRankings:'ランキング',
@@ -2841,7 +2870,9 @@ ja:{
   dep_note_text:'📌 上のウォレットに送金後、TxIDを送信してください。24時間以内に反映。',
   wd_note_text:'📌 5%手数料あり。100コイン → 95 USDT。処理時間：48時間。',
   dep_submit:'📤 申請送信',wd_submit:'📤 申請送信',
-  dep_hist_empty:'入金なし',wd_hist_empty:'出金なし',},
+  dep_hist_empty:'入金なし',wd_hist_empty:'出金なし',
+  dep_ph_amount:'最低 10 USDT',dep_ph_tx:'TxIDをここに貼り付け',dep_ph_note:'メモ（任意）',
+  wd_ph_amount:'最低 10 USDT',wd_ph_wallet:'USDTウォレットアドレス',},
 ko:{
   tagline:'체스를 두세요. 진짜 보상을 받으세요.',subtitle:'전 세계 플레이어와 경쟁하여 USDT를 획득하세요.',
   playNow:'▶ 플레이',viewRankings:'순위보기',
@@ -2885,7 +2916,9 @@ ko:{
   dep_note_text:'📌 위 지갑으로 암호화폐를 보낸 후 TxID를 제출하세요. 24시간 내 처리.',
   wd_note_text:'📌 5% 수수료 부과. 100코인 → 95 USDT. 처리: 48시간.',
   dep_submit:'📤 신청하기',wd_submit:'📤 신청하기',
-  dep_hist_empty:'입금 없음',wd_hist_empty:'출금 없음',},
+  dep_hist_empty:'입금 없음',wd_hist_empty:'출금 없음',
+  dep_ph_amount:'최소 10 USDT',dep_ph_tx:'TxID를 여기에 붙여넣기',dep_ph_note:'메모 (선택)',
+  wd_ph_amount:'최소 10 USDT',wd_ph_wallet:'USDT 지갑 주소',},
 id:{
   tagline:'Main Catur. Dapatkan Hadiah Nyata.',subtitle:'Tantang pemain nyata di seluruh dunia dan menangkan USDT. 1 KOIN = 1 USDT.',
   playNow:'▶ Main Sekarang',viewRankings:'Lihat Peringkat',
@@ -2929,7 +2962,9 @@ id:{
   dep_note_text:'📌 Kirim kripto ke dompet di atas, lalu kirim TxID. Admin mengkreditkan dalam 24 jam.',
   wd_note_text:'📌 Biaya 5%. 100 KOIN → 95 USDT. Pemrosesan: 48 jam.',
   dep_submit:'📤 Kirim Permintaan',wd_submit:'📤 Kirim Permintaan',
-  dep_hist_empty:'Belum ada setoran',wd_hist_empty:'Belum ada penarikan',},
+  dep_hist_empty:'Belum ada setoran',wd_hist_empty:'Belum ada penarikan',
+  dep_ph_amount:'Min. 10 USDT',dep_ph_tx:'Tempel TxID Anda di sini',dep_ph_note:'Catatan (Opsional)',
+  wd_ph_amount:'Min. 10 USDT',wd_ph_wallet:'Alamat dompet USDT Anda',},
 ha:{
   tagline:'Wasa Chess. Samu Lada.',subtitle:'Yi gasa da yan wasa na duniya ka lashe USDT. 1 KUDIN = 1 USDT.',
   playNow:'▶ Fara Wasa',viewRankings:'Dubi Matsayi',
@@ -2973,7 +3008,9 @@ ha:{
   dep_note_text:'📌 Aika crypto zuwa walat da ke sama, sannan aika TxID. Admin zai ƙara cikin awanni 24.',
   wd_note_text:'📌 An cire kashi 5%. 100 KUDI → 95 USDT. Sarrafa: awanni 48.',
   dep_submit:'📤 Aika Bukata',wd_submit:'📤 Aika Bukata',
-  dep_hist_empty:'Babu ajiya tukuna',wd_hist_empty:'Babu cirewa tukuna',},
+  dep_hist_empty:'Babu ajiya tukuna',wd_hist_empty:'Babu cirewa tukuna',
+  dep_ph_amount:'Min. 10 USDT',dep_ph_tx:'Liƙa TxID naka anan',dep_ph_note:'Bayani (Zaɓi)',
+  wd_ph_amount:'Min. 10 USDT',wd_ph_wallet:'Adireshin walat ɗin ka na USDT',},
 de:{
   tagline:'Schach spielen. Echte Belohnungen verdienen.',subtitle:'Fordere Spieler weltweit heraus und gewinne USDT. 1 Coin = 1 USDT.',
   playNow:'▶ Jetzt spielen',viewRankings:'Rangliste',
@@ -3017,7 +3054,9 @@ de:{
   dep_note_text:'📌 Senden Sie Krypto an die obige Wallet, dann TxID einreichen. Admin schreibt innerhalb 24h gut.',
   wd_note_text:'📌 5% Gebühr. 100 Coins → 95 USDT. Bearbeitung: 48h.',
   dep_submit:'📤 Anfrage senden',wd_submit:'📤 Anfrage senden',
-  dep_hist_empty:'Noch keine Einzahlungen',wd_hist_empty:'Noch keine Auszahlungen',},
+  dep_hist_empty:'Noch keine Einzahlungen',wd_hist_empty:'Noch keine Auszahlungen',
+  dep_ph_amount:'Min. 10 USDT',dep_ph_tx:'TxID hier einfügen',dep_ph_note:'Notiz (Optional)',
+  wd_ph_amount:'Min. 10 USDT',wd_ph_wallet:'Ihre USDT-Wallet-Adresse',},
 };
 
 function buildSbLangGrid(){
@@ -3260,6 +3299,11 @@ function setLang(code){
   if(wdSBtn)wdSBtn.textContent=t.wd_submit||'📤 Submit Request';
   var wdEmpty=document.querySelector('#wdHistory p');
   if(wdEmpty)wdEmpty.textContent=t.wd_hist_empty||'No withdrawals yet';
+  // Translate all input placeholders
+  document.querySelectorAll('[data-ph-key]').forEach(function(inp){
+    var key=inp.dataset.phKey;
+    if(t[key])inp.placeholder=t[key];
+  });
 
   // ── Sidebar tournament link text ──
   var sbTourn=document.getElementById('sbTourn');
@@ -3285,33 +3329,29 @@ function setLang(code){
   var supportBox=document.querySelector('.home-support-box');
   if(supportBox){supportBox.style.direction='ltr';supportBox.style.overflow='hidden';}
 
-  // ── Sidebar links ──
-  var sbLinks=document.querySelectorAll('#sidebar .sb-link');
-  var sbLinkKeys=['sb_home','sb_play',null,'sb_promotions',null,'sb_deposit','sb_withdraw',null,'sb_stats','sb_profile','sb_theme'];
-  var ki=0;
-  sbLinks.forEach(function(link){
-    if(ki<sbLinkKeys.length&&sbLinkKeys[ki]){
-      var txt=link.childNodes;
-      for(var ni=0;ni<txt.length;ni++){
-        if(txt[ni].nodeType===3&&txt[ni].textContent.trim()){
-          txt[ni].textContent=t[sbLinkKeys[ki]]||txt[ni].textContent;
-          break;
-        }
+  // ── Sidebar & mobile links — use data-link attribute (reliable) ──
+  document.querySelectorAll('[data-link]').forEach(function(link){
+    var key=link.dataset.link;
+    if(!t[key])return;
+    var nodes=link.childNodes;
+    for(var ni=0;ni<nodes.length;ni++){
+      if(nodes[ni].nodeType===3&&nodes[ni].textContent.trim()){
+        nodes[ni].textContent=t[key];
+        break;
       }
     }
-    ki++;
   });
 
   // ── Mobile drawer links ──
   var mobAuthLinks=document.getElementById('mobAuthLinks');
   if(mobAuthLinks){
-    var mobSecs=mobAuthLinks.querySelectorAll('.sb-section');
-    mobSecs.forEach(function(s){
-      var txt=s.textContent.trim().toLowerCase();
-      if(txt.indexOf('main')!==-1||txt.indexOf('principal')!==-1||txt.indexOf('главн')!==-1)s.textContent=t.sb_main||'Main';
-      else if(txt.indexOf('finance')!==-1||txt.indexOf('finanz')!==-1||txt.indexOf('финанс')!==-1||txt.indexOf('kudi')!==-1||txt.indexOf('مالیات')!==-1)s.textContent=t.sb_finance||'Finance';
-      else if(txt.indexOf('account')!==-1||txt.indexOf('cuenta')!==-1||txt.indexOf('аккаунт')!==-1||txt.indexOf('asusun')!==-1||txt.indexOf('اکاؤنٹ')!==-1)s.textContent=t.sb_account||'Account';
-      else if(txt.indexOf('support')!==-1||txt.indexOf('soporte')!==-1||txt.indexOf('поддержк')!==-1||txt.indexOf('taimako')!==-1||txt.indexOf('سپورٹ')!==-1)s.textContent=t.sb_support||'Support';
+    // Mobile sections use data-sec (reliable, no text matching)
+    mobAuthLinks.querySelectorAll('[data-sec]').forEach(function(s){
+      var sec=s.dataset.sec;
+      if(sec==='main')s.textContent=t.sb_main||'Main';
+      else if(sec==='finance')s.textContent=t.sb_finance||'Finance';
+      else if(sec==='account')s.textContent=t.sb_account||'Account';
+      else if(sec==='support')s.textContent=t.sb_support||'Support';
     });
     // Mobile drawer buttons
     var mobBtns=mobAuthLinks.querySelectorAll('button');
