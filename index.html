@@ -50,7 +50,7 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
 :root{--bg:#0f212e;--surface:#1a2c38;--surface2:#213743;--surface3:#2d4a5a;--accent:#00e701;--accent2:#1a9aef;--text:#ffffff;--muted:#b1bad3;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--red:#f93848;--green:#00e701;--radius:8px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;font-weight:500;overflow-x:hidden}
-header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;direction:ltr}
 .logo{font-size:20px;font-weight:900;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:8px}
 .btn{font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 20px;border-radius:var(--radius);border:none;cursor:pointer;transition:all .15s;white-space:nowrap;background:var(--accent);color:#000}
 .btn:hover{opacity:.9;transform:translateY(-1px)}
@@ -137,9 +137,9 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .sq:hover{filter:brightness(1.3)}
 .piece{pointer-events:none;user-select:none;line-height:1}
 .board-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap;align-items:center;width:100%}
-.profile-btn{position:relative;width:36px;height:36px;border-radius:50%;background:var(--surface2);border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}
+.profile-btn{position:relative;width:36px;height:36px;border-radius:50%;background:var(--surface2);border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;direction:ltr}
 .profile-btn:hover{border-color:var(--accent)}
-.profile-drop{position:absolute;top:44px;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);min-width:220px;display:none;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.4);direction:ltr;text-align:left}
+.profile-drop{position:absolute;top:44px;right:0;left:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);min-width:220px;display:none;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.4);direction:ltr;text-align:left}
 .profile-drop.open{display:block}
 .drop-item{padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);transition:background .15s;direction:ltr;text-align:left;white-space:nowrap}
 .drop-item:hover{background:var(--surface3)}
@@ -2011,6 +2011,12 @@ function setLang(code){
   // Also force LTR on the main content area
   var mainEl=document.querySelector('main');
   if(mainEl){mainEl.style.direction='ltr';}
+  // Header must ALWAYS be LTR so navbar items never reverse
+  var headerEl=document.querySelector('header');
+  if(headerEl){headerEl.style.direction='ltr';}
+  // Profile dropdown always LTR and right-aligned to button
+  var pDropEl=document.getElementById('pDrop');
+  if(pDropEl){pDropEl.style.direction='ltr';pDropEl.style.right='0';pDropEl.style.left='auto';}
   // But allow text to be RTL inside those containers for RTL languages
   if(tr.dir==='rtl'){
     document.querySelectorAll('.hero h1,.hero p,.hero-btns,.section h2,.section-tag,'+
