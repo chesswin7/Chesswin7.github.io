@@ -89,7 +89,7 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .sb-icon{font-size:16px;width:20px;text-align:center}
 .page{display:none;padding:32px 10px}
 .page.active{display:block}
-.hero{min-height:calc(100vh - 60px);display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:60px 48px}
+.hero{min-height:calc(100vh - 60px);display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:60px 48px;direction:ltr}
 .hero h1{font-size:48px;font-weight:900;line-height:1.1;margin-bottom:16px}
 .hero h1 span{color:var(--accent)}
 .hero p{font-size:16px;color:var(--muted);line-height:1.7;margin-bottom:32px}
@@ -97,27 +97,27 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 /* ── FIX 6: Exposure always visible, LTR forced ── */
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
-.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);direction:ltr}
 .stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
 .stat-item:last-child{border-right:none}
 .stat-val{font-size:40px;font-weight:900;color:var(--accent)}
 .stat-label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
-.ticker{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;margin:0}
+.ticker{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;margin:0;direction:ltr}
 .ticker-track{display:inline-flex;animation:ticker 45s linear infinite}
 .ticker-track:hover{animation-play-state:paused}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .tick-item{display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-right:1px solid var(--border)}
-.lb-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.lb-head{display:grid;grid-template-columns:80px 1fr 140px 100px 80px 130px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.lb-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;direction:ltr}
+.lb-head{display:grid;grid-template-columns:80px 1fr 140px 100px 80px 130px;background:var(--surface2);border-bottom:1px solid var(--border);direction:ltr}
 .lb-head span{padding:13px 16px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .lb-viewport{height:440px;overflow:hidden;position:relative}
-.lb-row{display:grid;grid-template-columns:80px 1fr 140px 100px 80px 130px;align-items:center;border-bottom:1px solid var(--border);height:44px;position:absolute;width:100%;background:var(--surface);transition:top .5s ease}
+.lb-row{display:grid;grid-template-columns:80px 1fr 140px 100px 80px 130px;align-items:center;border-bottom:1px solid var(--border);height:44px;position:absolute;width:100%;background:var(--surface);transition:top .5s ease;direction:ltr}
 .lb-row:hover{background:var(--surface2)}
 .lb-row div{padding:0 16px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lb-row .rank{color:var(--muted);font-weight:700}
 .lb-row .coins{color:var(--accent);text-align:right}
 .lb-row .rating{color:var(--accent2)}
-.cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;direction:ltr}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .2s}
 .card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
 .card-badge{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:4px;background:var(--accent);color:#000;display:inline-block;margin-bottom:14px}
@@ -143,7 +143,7 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .profile-drop.open{display:block}
 .drop-item{padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);transition:background .15s;direction:ltr;text-align:left;white-space:nowrap}
 .drop-item:hover{background:var(--surface3)}
-.mini-boards-section{padding:48px 0;background:var(--surface)}
+.mini-boards-section{padding:48px 0;background:var(--surface);direction:ltr}
 .mini-boards-section h2{font-size:28px;font-weight:900;margin-bottom:8px;text-align:center}
 .mini-boards-section p{color:var(--muted);text-align:center;margin-bottom:36px}
 .mini-boards-inner{padding:0 48px}
@@ -170,7 +170,7 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 #legalModal .modal-box{max-width:600px;width:95%;max-height:80vh;overflow-y:auto;text-align:left}
 #legalBody{font-size:14px;color:var(--muted);line-height:1.8}
 #legalBody h4{color:var(--text);font-size:14px;margin:16px 0 6px}
-.play-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
+.play-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;direction:ltr}
 .play-board-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
 .player-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:500px;font-size:13px;font-weight:700}
 .player-bar.active{border-color:var(--accent)}
@@ -1173,18 +1173,19 @@ function buildLB(players){
   tick();
 }
 function loadLB(){
-  // FIX 4: Only show real users with wins>0 OR rating>0 on leaderboard
-  // New users (rating=0, wins=0) don't appear until they earn points
   db.collection('users').orderBy('rating','desc').limit(20).get().then(function(snap){
     var realPlayers=[];
     snap.docs.forEach(function(d){
       var u=Object.assign({uid:d.id},d.data());
       u.u=u.username;u.r=u.rating||0;u.w=u.wins||0;u.c=u.coins||0;
-      // FIX 4: Only include on leaderboard if they have earned points
       if(u.r>0||u.w>0){realPlayers.push(u);}
     });
-    // If we have real players, show only them; otherwise show fake data
-    var players=realPlayers.length>0?realPlayers:FAKE_LB;
+    // Merge real players WITH fake LB — real players override by username
+    var players=FAKE_LB.slice();
+    realPlayers.forEach(function(rp){
+      var dup=players.findIndex(function(p){return p.u===rp.u;});
+      if(dup>=0){players[dup]=rp;}else{players.push(rp);}
+    });
     players.sort(function(a,b){return(b.r||b.rating||0)-(a.r||a.rating||0);});
     window._lastLBPlayers=players;
     buildLB(players);buildTicker(players);
@@ -2001,8 +2002,29 @@ function setLang(code){
   // Force LTR on elements that must never flip
   var ltrEls=['navBalance','navExposure','wdBal','prof-rating','prof-wins','prof-coins'];
   ltrEls.forEach(function(id){var el=document.getElementById(id);if(el)el.style.direction='ltr';});
-  // Also force LTR on all .pstat-val elements (FIX 6)
   document.querySelectorAll('.pstat-val,.profile-stats,.tier-badge').forEach(function(el){el.style.direction='ltr';});
+  // Force LTR on ALL major layout sections so RTL only affects text alignment
+  ['hero','stats-bar','ticker','lb-wrap','cards-grid','mini-boards-section',
+   'play-layout','finance-form','balance-box'].forEach(function(cls){
+    document.querySelectorAll('.'+cls).forEach(function(el){el.style.direction='ltr';});
+  });
+  // Also force LTR on the main content area
+  var mainEl=document.querySelector('main');
+  if(mainEl){mainEl.style.direction='ltr';}
+  // But allow text to be RTL inside those containers for RTL languages
+  if(tr.dir==='rtl'){
+    document.querySelectorAll('.hero h1,.hero p,.hero-btns,.section h2,.section-tag,'+
+      '.faq-q,.faq-a,.card h3,.card-row,.panel h3,.finance-form h3,.form-row label,'+
+      '.sb-link,.drop-item,.modal-box h2,.modal-box p').forEach(function(el){
+      el.style.textAlign='right';
+    });
+  } else {
+    document.querySelectorAll('.hero h1,.hero p,.hero-btns,.section h2,.section-tag,'+
+      '.faq-q,.faq-a,.card h3,.card-row,.panel h3,.finance-form h3,.form-row label,'+
+      '.sb-link,.drop-item,.modal-box h2,.modal-box p').forEach(function(el){
+      el.style.textAlign='';
+    });
+  }
 
   // FIX 5A: Hero section — all IDs targeted directly
   function setInner(id,html){var el=document.getElementById(id);if(el&&html!==undefined)el.innerHTML=html;}
