@@ -763,7 +763,17 @@ function _removeLoadBar(){
         <div class="mc" id="mc-match">
           <div class="inp">
             <label id="matchTimeLabel">Time Control</label>
-            <select id="mtc"><option value="30">30s Ultra</option><option value="60">1min Bullet</option><option value="180">3min Blitz</option><option value="600" selected>10min Rapid</option></select>
+            <select id="mtc">
+                <option value="30">30s Ultra Bullet</option>
+                <option value="60">1min Bullet</option>
+                <option value="120">2min Bullet</option>
+                <option value="180">3min Blitz</option>
+                <option value="300">5min Blitz</option>
+                <option value="600" selected>10min Rapid</option>
+                <option value="900">15min Rapid</option>
+                <option value="1800">30min Classical</option>
+                <option value="3600">60min Classical</option>
+              </select>
           </div>
           <button class="btn" style="width:100%;margin-bottom:8px" id="matchBtn" onclick="startMatch()">Find Opponent</button>
           <div id="matchSt" style="display:none;text-align:center;font-size:12px;color:var(--muted)"><span class="dot"></span>Searching...</div>
@@ -777,11 +787,134 @@ function _removeLoadBar(){
 <!-- TOURNAMENT PAGE -->
 <div class="page" id="page-tournament">
   <p class="section-tag" id="tournTag">Competitive</p>
-  <h2 id="tournTitle" style="font-size:24px;font-weight:900;margin-bottom:24px">Tournaments</h2>
-  <div class="cards-grid" style="margin-bottom:32px">
-    <div class="card"><div class="card-badge">Swiss</div><h3>Weekly Swiss Open</h3><div class="card-row"><span class="lbl">Entry</span><span class="val">Free</span></div><div class="card-row"><span class="lbl">Prize</span><span class="val">2,000 COINS</span></div><button class="btn" style="width:100%" onclick="toast('Joined Weekly Swiss Open!','ok')">Join</button></div>
-    <div class="card"><div class="card-badge" style="background:var(--accent2);color:#fff">Knockout</div><h3>King's Knockout</h3><div class="card-row"><span class="lbl">Entry</span><span class="val">200 COINS</span></div><div class="card-row"><span class="lbl">Prize</span><span class="val">5,000 COINS</span></div><button class="btn" style="width:100%" onclick="toast('Joined!','ok')">Join</button></div>
-    <div class="card"><div class="card-badge" style="background:#f0a500;color:#000">Seasonal</div><h3>Spring Open 2026</h3><div class="card-row"><span class="lbl">Entry</span><span class="val">500 COINS</span></div><div class="card-row"><span class="lbl">Prize</span><span class="val">20,000 COINS</span></div><button class="btn" style="width:100%" onclick="toast('Registered!','ok')">Register</button></div>
+  <h2 id="tournTitle" style="font-size:24px;font-weight:900;margin-bottom:8px">Tournaments</h2>
+  <p style="color:var(--muted);margin-bottom:28px" id="tournSubtitle">Join a tournament, compete, and win COINS</p>
+
+  <!-- 1v1 Direct Challenge -->
+  <div style="margin-bottom:32px">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">⚔️ Direct Challenge</p>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-badge">1 vs 1</div>
+        <h3>Direct Match</h3>
+        <div class="card-row"><span class="lbl">Format</span><span class="val">Head to Head</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">Free</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">Your choice</span></div>
+        <button class="btn" style="width:100%" onclick="goPage('play')">▶ Play Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standard Formats -->
+  <div style="margin-bottom:32px">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">🏆 Standard Formats</p>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-badge">Swiss</div>
+        <h3>Weekly Swiss Open</h3>
+        <div class="card-row"><span class="lbl">Format</span><span class="val">Swiss System</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">Free</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">2,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">10min Rapid</span></div>
+        <button class="btn" style="width:100%" onclick="toast('Swiss Tournament — Coming Soon!','info')">Join</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:var(--accent2);color:#fff">Knockout</div>
+        <h3>King's Knockout</h3>
+        <div class="card-row"><span class="lbl">Format</span><span class="val">Single Elimination</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">200 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">5,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">5min Blitz</span></div>
+        <button class="btn" style="width:100%" onclick="toast('Knockout Tournament — Coming Soon!','info')">Join</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:#9b59b6;color:#fff">Double</div>
+        <h3>Double Elimination</h3>
+        <div class="card-row"><span class="lbl">Format</span><span class="val">Double Elim.</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">300 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">8,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">5min Blitz</span></div>
+        <button class="btn" style="width:100%" onclick="toast('Double Elimination — Coming Soon!','info')">Join</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arena Time Controls -->
+  <div style="margin-bottom:32px">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">⚡ Arena</p>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-badge" style="background:#e74c3c;color:#fff">Ultra Bullet</div>
+        <h3>Ultra Bullet Arena</h3>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">30s per side</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">50 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">500 COINS</span></div>
+        <button class="btn" style="width:100%" onclick="toast('Ultra Bullet Arena — Coming Soon!','info')">Join</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:#e67e22;color:#fff">Bullet</div>
+        <h3>Bullet Arena</h3>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">1min per side</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">100 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">1,000 COINS</span></div>
+        <button class="btn" style="width:100%" onclick="toast('Bullet Arena — Coming Soon!','info')">Join</button>
+      </div>
+      <div class="card">
+        <div class="card-badge">Blitz</div>
+        <h3>Blitz Arena</h3>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">3min per side</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">100 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">1,000 COINS</span></div>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Enter Tournament</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:var(--accent2);color:#fff">Rapid</div>
+        <h3>Rapid Arena</h3>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">10min per side</span></div>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">250 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">5,000 COINS</span></div>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Enter Tournament</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seasonal -->
+  <div style="margin-bottom:32px">
+    <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f0a500;margin-bottom:12px">🌸 Seasonal</p>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-badge" style="background:linear-gradient(135deg,#ff9a9e,#fad0c4);color:#000">Spring</div>
+        <h3>Spring Open 2026</h3>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">500 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">20,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">15min Classical</span></div>
+        <button class="btn" style="width:100%;background:#f0a500;color:#000" onclick="toast('Spring Open — Coming Soon!','info')">Register</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:linear-gradient(135deg,#f6d365,#fda085);color:#000">Summer</div>
+        <h3>Summer Open 2026</h3>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">500 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">20,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">15min Classical</span></div>
+        <button class="btn" style="width:100%;background:#f0a500;color:#000" onclick="toast('Summer Open — Coming Soon!','info')">Register</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff">Autumn</div>
+        <h3>Autumn Open 2026</h3>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">500 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">20,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">15min Classical</span></div>
+        <button class="btn" style="width:100%;background:#f0a500;color:#000" onclick="toast('Autumn Open — Coming Soon!','info')">Register</button>
+      </div>
+      <div class="card">
+        <div class="card-badge" style="background:linear-gradient(135deg,#a8edea,#fed6e3);color:#000">Winter</div>
+        <h3>Winter Open 2026</h3>
+        <div class="card-row"><span class="lbl">Entry</span><span class="val">500 COINS</span></div>
+        <div class="card-row"><span class="lbl">Prize</span><span class="val">20,000 COINS</span></div>
+        <div class="card-row"><span class="lbl">Time</span><span class="val">15min Classical</span></div>
+        <button class="btn" style="width:100%;background:#f0a500;color:#000" onclick="toast('Winter Open — Coming Soon!','info')">Register</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1715,7 +1848,29 @@ function toast(msg,type){var t=document.getElementById('toast');t.className='toa
 
 // Tournament
 function toggleTournDrop(e,el){e.stopPropagation();var drop=document.getElementById('sbTournDrop');if(!drop)return;var isOpen=drop.style.display==='block';drop.style.display=isOpen?'none':'block';el.classList.toggle('active',!isOpen);}
-function goTourney(type){if(!window.currentUser){openAuth('login');toast('Please login first','err');return;}goPage('tournament');var titles={'1v1':'1 vs 1','swiss':'Swiss Tournament','knockout':'Knockout','double':'Double Elimination','rapid':'Rapid Tournament','blitz':'Blitz Tournament','bullet':'Bullet Tournament','ultra':'Ultra Bullet','spring':'Spring Open','summer':'Summer Open','autumn':'Autumn Open','winter':'Winter Open'};toast('Opening: '+(titles[type]||type),'info');}
+function goTourney(type){
+  if(!window.currentUser){openAuth('login');toast('Please login first','err');return;}
+  if(type==='1v1'){
+    // 1v1 goes to play page
+    goPage('play');
+    return;
+  }
+  // All other tournament types → tournament page, highlight the type
+  goPage('tournament');
+  // Set active tournament type in the page
+  var typeNames={
+    swiss:'Swiss Tournament',knockout:'Knockout (Elimination)',double:'Double Elimination',
+    rapid:'Rapid Tournament',blitz:'Blitz Tournament',bullet:'Bullet Tournament',ultra:'Ultra Bullet',
+    spring:'Spring Open',summer:'Summer Open',autumn:'Autumn Open',winter:'Winter Open'
+  };
+  // Update tournament page heading to show which tournament was clicked
+  var activeName=typeNames[type]||type;
+  var heading=document.getElementById('tournTitle');
+  if(heading)heading.textContent=activeName;
+  // Highlight matching card or show info
+  var subTag=document.querySelector('#page-tournament .section-tag');
+  if(subTag)subTag.textContent=activeName;
+}
 
 // Mobile drawer
 function toggleMobDrawer(){var drawer=document.getElementById('mobDrawer'),overlay=document.getElementById('mobOverlay'),ham=document.getElementById('hamburger');if(!drawer)return;var isOpen=drawer.classList.contains('open');drawer.classList.toggle('open',!isOpen);overlay.classList.toggle('open',!isOpen);ham.classList.toggle('open',!isOpen);}
