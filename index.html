@@ -132,8 +132,8 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
-.sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.85);box-shadow:0 0 6px rgba(0,231,1,.5)}
-.sq.lc::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 3px rgba(0,231,1,.9),inset 0 0 0 5px rgba(0,231,1,.3)}
+.sq.lm::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:#00e701}
+.sq.lc::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 3px #00e701}
 .sq:hover{filter:brightness(1.4)}
 .piece{pointer-events:none;user-select:none;line-height:1}
 .board-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap;align-items:center;width:100%}
@@ -1110,8 +1110,8 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     var idx=flip?63-vi:vi;var r=Rw(idx),c=Cw(idx);
     var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
     var isDark=(r+c)%2===0;
-    if(lmv&&(idx===lmv.f||idx===lmv.t))sq.style.background=isDark?'rgba(0,231,1,.3)':'rgba(0,231,1,.4)';
-    else if(idx===sel){sq.style.background='rgba(0,231,1,.45)';sq.style.boxShadow='inset 0 0 0 2px rgba(0,231,1,.8)';}
+    if(lmv&&(idx===lmv.f||idx===lmv.t)){sq.style.background=isDark?'rgba(0,231,1,.35)':'rgba(0,231,1,.45)';}
+    else if(idx===sel){sq.style.background='rgba(0,231,1,.5)';sq.style.boxShadow='';}
     else sq.style.background=isDark?getDark():getLight();
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
     if(brd[idx]){
@@ -1187,6 +1187,7 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
     if(mv){
       pHist.push({b:pB.slice(),t:pT,s:pSel,l:pLm.slice(),lv:pLmv,cr:Object.assign({},pCr),ep:pEp});
       var res=applyM(mv,pB,pEp,pCr);pB=res.b;pEp=res.ep;pCr=res.cr;pLmv=mv;pSel=null;pLm=[];pT=Op(pT);pMH.push(mv);updMoves();renderPlay();
+      if(pMode==='friend')switchTimerTurn();
       var ended=playCheckEnd();
       if(!ended&&pMode==='ai'&&pT!==pColor){
         var atb=document.getElementById('aiThinkBar');if(atb)atb.style.display='block';
@@ -1196,8 +1197,7 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
           var bm=bestAI(pB,4,pEp,pCr);
           if(bm){pHist.push({b:pB.slice(),t:pT,s:null,l:[],lv:pLmv,cr:Object.assign({},pCr),ep:pEp});var r2=applyM(bm,pB,pEp,pCr);pB=r2.b;pEp=r2.ep;pCr=r2.cr;pLmv=bm;pT=Op(pT);pMH.push(bm);updMoves();renderPlay();playCheckEnd();
             var atb2=document.getElementById('aiThinkBar');if(atb2)atb2.style.display='none';
-            var ob=document.getElementById('oppBar');if(ob)ob.style.borderColor='';
-            var on3=document.getElementById('oppName');if(on3)on3.textContent='AI';}
+            var ob=document.getElementById('oppBar');if(ob)ob.style.borderColor='';}
         },300);
       }
     } else{pSel=null;pLm=[];renderPlay();}
@@ -1223,9 +1223,201 @@ function startAI(){var col=document.getElementById('aiCol').value;pColor=col==='
 function switchMode(m,btn){pMode=m;document.querySelectorAll('.mt').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.mc').forEach(function(c){c.classList.remove('active');});var mc=document.getElementById('mc-'+m);if(mc)mc.classList.add('active');}
 function offerDraw(){toast('Draw offered','info');}
 function resignGame(){if(pGO)return;pGO=true;toast('You resigned','info');var st=document.getElementById('pSt');if(st)st.textContent='Resigned';}
-function createRoom(){toast('Room feature coming soon','info');}
-function joinRoom(){toast('Join room coming soon','info');}
-function startMatch(){toast('Matchmaking coming soon','info');}
+// ── TIMER SYSTEM ──
+var _timerInterval=null;
+var _myTime=0, _oppTime=0, _timerActive=false, _myTurn=false;
+
+function startTimer(mySecs, oppSecs, myTurnFirst){
+  clearInterval(_timerInterval);
+  _myTime=mySecs; _oppTime=oppSecs; _myTurn=myTurnFirst; _timerActive=true;
+  updateTimerDisplay();
+  _timerInterval=setInterval(function(){
+    if(!_timerActive)return;
+    if(_myTurn){_myTime--;if(_myTime<=0){_myTime=0;updateTimerDisplay();_timerActive=false;clearInterval(_timerInterval);endGameByTime('opp');return;}}
+    else{_oppTime--;if(_oppTime<=0){_oppTime=0;updateTimerDisplay();_timerActive=false;clearInterval(_timerInterval);endGameByTime('me');return;}}
+    updateTimerDisplay();
+  },1000);
+}
+
+function switchTimerTurn(){_myTurn=!_myTurn;}
+
+function stopTimer(){_timerActive=false;clearInterval(_timerInterval);}
+
+function fmtTime(s){
+  if(s<=0)return'0:00';
+  var m=Math.floor(s/60),sec=s%60;
+  return m+':'+(sec<10?'0':'')+sec;
+}
+
+function updateTimerDisplay(){
+  var me=document.getElementById('meTimer');
+  var opp=document.getElementById('oppTimer');
+  if(me)me.textContent=fmtTime(_myTime);
+  if(opp)opp.textContent=fmtTime(_oppTime);
+  // Visual warning when < 10 seconds
+  if(me){me.style.color=_myTime<=10&&_myTime>0?'#f93848':'';me.style.fontWeight=_myTime<=10?'900':'';}
+  if(opp){opp.style.color=_oppTime<=10&&_oppTime>0?'#f93848':'';opp.style.fontWeight=_oppTime<=10?'900':'';}
+}
+
+function endGameByTime(loser){
+  pGO=true;
+  var st=document.getElementById('pSt');
+  if(loser==='me'){if(st)st.textContent='Time up! You lose.';}
+  else{if(st)st.textContent='Time up! Opponent loses. You win!';}
+  toast(loser==='me'?'Time up — you lose!':'Time up — you win!', loser==='me'?'err':'ok');
+}
+
+// Override startAI to use timer
+var _origStartAI=startAI;
+function startAI(){
+  stopTimer();
+  _origStartAI();
+  var tc=parseInt(document.getElementById('aiDiff')?0:0)||0;
+  // No timer for vs AI by default (AI doesn't need time pressure)
+  var meEl=document.getElementById('meTimer');
+  var oppEl=document.getElementById('oppTimer');
+  if(meEl)meEl.textContent='—';
+  if(oppEl)oppEl.textContent='—';
+}
+
+// ── ROOM CREATION (Firebase Realtime DB) ──
+var _roomCode=null, _roomRef=null, _roomListener=null;
+
+function createRoom(){
+  if(!window.currentUser){openAuth('login');return;}
+  var tc=parseInt(document.getElementById('ftc').value)||600;
+  // Generate 6-char room code
+  _roomCode=Math.random().toString(36).substr(2,6).toUpperCase();
+  var roomData={
+    host:window.currentUser.uid,
+    hostName:safeText(window.currentUserData?window.currentUserData.username:'Player'),
+    guest:null,guestName:null,
+    tc:tc,status:'waiting',
+    createdAt:firebase.database.ServerValue.TIMESTAMP
+  };
+  _roomRef=rtdb.ref('rooms/'+_roomCode);
+  _roomRef.set(roomData).then(function(){
+    document.getElementById('roomDisplay').style.display='block';
+    document.getElementById('roomCode').textContent=_roomCode;
+    toast('Room created! Share code: '+_roomCode,'ok');
+    // Listen for guest to join
+    _roomRef.on('value',function(snap){
+      var d=snap.val();
+      if(!d)return;
+      if(d.guest&&d.status==='ready'){
+        // Guest joined — start game as White
+        _roomRef.off('value');
+        pColor='w';pMode='friend';
+        document.getElementById('oppName').textContent=safeText(d.guestName||'Guest');
+        document.getElementById('meName').textContent=safeText(roomData.hostName)+' (White)';
+        resetPlay();
+        startTimer(tc,tc,true); // host goes first
+        document.getElementById('roomDisplay').style.display='none';
+        toast('Game started! You are White.','ok');
+      }
+    });
+  }).catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+function joinRoom(){
+  if(!window.currentUser){openAuth('login');return;}
+  var code=(document.getElementById('joinCode').value||'').trim().toUpperCase();
+  if(!code||code.length<4){toast('Enter a valid room code','err');return;}
+  var ref=rtdb.ref('rooms/'+code);
+  ref.once('value').then(function(snap){
+    var d=snap.val();
+    if(!d){toast('Room not found','err');return;}
+    if(d.status!=='waiting'){toast('Room is full or game already started','err');return;}
+    var myName=safeText(window.currentUserData?window.currentUserData.username:'Guest');
+    return ref.update({guest:window.currentUser.uid,guestName:myName,status:'ready'}).then(function(){
+      _roomCode=code;_roomRef=ref;
+      pColor='b';pMode='friend';
+      document.getElementById('oppName').textContent=safeText(d.hostName||'Host');
+      document.getElementById('meName').textContent=myName+' (Black)';
+      resetPlay();
+      startTimer(d.tc,d.tc,false); // host goes first, not me
+      toast('Joined room '+code+'! You are Black.','ok');
+      // Listen for moves (future: sync moves via RTDB)
+    });
+  }).catch(function(e){toast('Error: '+e.message,'err');});
+}
+
+// ── MATCHMAKING (Firebase Realtime DB) ──
+var _matchRef=null;
+function startMatch(){
+  if(!window.currentUser){openAuth('login');return;}
+  var btn=document.getElementById('matchBtn');
+  var stEl=document.getElementById('matchSt');
+  // If already searching, cancel
+  if(btn&&btn.dataset.searching==='1'){
+    if(_matchRef)_matchRef.remove();
+    btn.dataset.searching='0';
+    btn.textContent='Find Opponent';
+    if(stEl)stEl.style.display='none';
+    return;
+  }
+  var tc=parseInt(document.getElementById('mtc').value)||600;
+  if(btn){btn.dataset.searching='1';btn.textContent='Cancel Search';}
+  if(stEl)stEl.style.display='block';
+  var myName=safeText(window.currentUserData?window.currentUserData.username:'Player');
+  var myRating=(window.currentUserData&&window.currentUserData.rating)||0;
+  // Look for existing waiting player
+  var queueRef=rtdb.ref('matchQueue');
+  queueRef.orderByChild('tc').equalTo(tc).limitToFirst(5).once('value').then(function(snap){
+    var found=null;
+    snap.forEach(function(child){
+      var d=child.val();
+      if(d.uid!==window.currentUser.uid&&!d.matched){found={key:child.key,data:d};return true;}
+    });
+    if(found){
+      // Found opponent — join their game
+      var oppRef=rtdb.ref('matchQueue/'+found.key);
+      oppRef.update({matched:window.currentUser.uid,matchedName:myName}).then(function(){
+        oppRef.off();
+        pColor='b';pMode='friend';
+        document.getElementById('oppName').textContent=safeText(found.data.name||'Opponent');
+        document.getElementById('meName').textContent=myName+' (Black)';
+        resetPlay();
+        startTimer(tc,tc,false);
+        if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
+        if(stEl)stEl.style.display='none';
+        toast('Match found! You are Black.','ok');
+      });
+    } else {
+      // Add self to queue and wait
+      _matchRef=queueRef.push({uid:window.currentUser.uid,name:myName,rating:myRating,tc:tc,matched:null,ts:firebase.database.ServerValue.TIMESTAMP});
+      // Listen for someone to match us
+      _matchRef.on('value',function(snap2){
+        var d2=snap2.val();
+        if(!d2)return;
+        if(d2.matched&&d2.matched!==window.currentUser.uid){
+          _matchRef.off('value');_matchRef.remove();
+          pColor='w';pMode='friend';
+          document.getElementById('oppName').textContent=safeText(d2.matchedName||'Opponent');
+          document.getElementById('meName').textContent=myName+' (White)';
+          resetPlay();
+          startTimer(tc,tc,true);
+          if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
+          if(stEl)stEl.style.display='none';
+          toast('Match found! You are White.','ok');
+        }
+      });
+      // Auto-cleanup after 2 minutes if no match
+      setTimeout(function(){
+        if(btn&&btn.dataset.searching==='1'){
+          if(_matchRef)_matchRef.remove();
+          if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
+          if(stEl)stEl.style.display='none';
+          toast('No opponent found. Try again.','info');
+        }
+      },120000);
+    }
+  }).catch(function(e){
+    if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
+    if(stEl)stEl.style.display='none';
+    toast('Matchmaking error: '+e.message,'err');
+  });
+}
 function requireLogin(){if(!window.currentUser){openAuth('signup');toast('Please sign up to play tournaments','info');}else{goPage('play');}}
 
 // Mini boards
