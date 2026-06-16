@@ -132,9 +132,9 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
-.sq.lm::after{content:'';position:absolute;width:34%;height:34%;border-radius:50%;background:rgba(0,231,1,.6)}
-.sq.lc::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 4px rgba(0,231,1,.6)}
-.sq:hover{filter:brightness(1.3)}
+.sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.85);box-shadow:0 0 6px rgba(0,231,1,.5)}
+.sq.lc::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 3px rgba(0,231,1,.9),inset 0 0 0 5px rgba(0,231,1,.3)}
+.sq:hover{filter:brightness(1.4)}
 .piece{pointer-events:none;user-select:none;line-height:1}
 .board-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap;align-items:center;width:100%}
 .profile-btn{position:relative;width:36px;height:36px;border-radius:50%;background:var(--surface2);border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;direction:ltr}
@@ -573,6 +573,9 @@ function _removeLoadBar(){
           </div>
         </div>
         <div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600;margin-top:8px" id="hSt">White to move</div>
+        <div id="hThinkBar" style="display:none;text-align:center;padding:8px 16px;margin-top:6px;background:rgba(26,154,239,.12);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:800;color:var(--accent2);width:100%">
+          🤖 AI Thinking... <span style="float:right;opacity:.5;cursor:pointer;font-weight:400" onclick="this.parentElement.style.display='none'">—</span>
+        </div>
         <div class="board-controls">
           <button class="btn btn-o btn-sm" onclick="resetHome()">New</button>
           <button class="btn btn-o btn-sm" onclick="undoHome()">Undo</button>
@@ -726,7 +729,6 @@ function _removeLoadBar(){
       <div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600" id="pSt">Choose a mode →</div>
       <div class="board-controls">
         <button class="btn btn-o btn-sm" id="playBtnNew" onclick="resetPlay()">New</button>
-        <button class="btn btn-o btn-sm" id="playBtnUndo" onclick="undoPlay()">Undo</button>
         <button class="btn btn-o btn-sm" id="playBtnDraw" onclick="offerDraw()">½ Draw</button>
         <button class="btn btn-red btn-sm" id="playBtnResign" onclick="resignGame()">Resign</button>
       </div>
@@ -793,15 +795,16 @@ function _removeLoadBar(){
   <!-- 1v1 Direct Challenge -->
   <div style="margin-bottom:32px">
     <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">⚔️ Direct Challenge</p>
-    <div class="cards-grid">
-      <div class="card">
-        <div class="card-badge">1 vs 1</div>
-        <h3>Direct Match</h3>
-        <div class="card-row"><span class="lbl">Format</span><span class="val">Head to Head</span></div>
-        <div class="card-row"><span class="lbl">Entry</span><span class="val">Free</span></div>
-        <div class="card-row"><span class="lbl">Time</span><span class="val">Your choice</span></div>
-        <button class="btn" style="width:100%" onclick="goPage('play')">▶ Play Now</button>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+      <div>
+        <div style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:4px;background:var(--accent);color:#000;margin-bottom:10px">1 vs 1</div>
+        <h3 style="font-size:20px;font-weight:800;margin-bottom:8px">Direct Match — Play Now</h3>
+        <p style="color:var(--muted);font-size:13px">Challenge a friend or play vs AI. Choose your time control and start immediately.</p>
+        <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--muted)">⚔️ Head to Head &nbsp;|&nbsp; ⏱ Any time control &nbsp;|&nbsp; 🆓 Free to play</span>
+        </div>
       </div>
+      <button class="btn" style="padding:13px 32px;font-size:15px;white-space:nowrap" onclick="goPage('play')">▶ Play Now</button>
     </div>
   </div>
 
@@ -1107,8 +1110,8 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     var idx=flip?63-vi:vi;var r=Rw(idx),c=Cw(idx);
     var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
     var isDark=(r+c)%2===0;
-    if(lmv&&(idx===lmv.f||idx===lmv.t))sq.style.background=isDark?'rgba(0,231,1,.25)':'rgba(0,231,1,.35)';
-    else if(idx===sel)sq.style.background='rgba(0,231,1,.4)';
+    if(lmv&&(idx===lmv.f||idx===lmv.t))sq.style.background=isDark?'rgba(0,231,1,.3)':'rgba(0,231,1,.4)';
+    else if(idx===sel){sq.style.background='rgba(0,231,1,.45)';sq.style.boxShadow='inset 0 0 0 2px rgba(0,231,1,.8)';}
     else sq.style.background=isDark?getDark():getLight();
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
     if(brd[idx]){
@@ -1153,11 +1156,11 @@ function homeClick(i){if(hGO)return;var p=hB[i];
     if(mv){hHist.push({b:hB.slice(),t:hT,s:hSel,l:hLm.slice(),lv:hLmv,cr:Object.assign({},hCr),ep:hEp});
       var res=applyM(mv,hB,hEp,hCr);hB=res.b;hEp=res.ep;hCr=res.cr;hLmv=mv;hSel=null;hLm=[];hT=Op(hT);renderHome();
       var ended=homeCheckEnd();
-      if(!ended&&hT==='b'&&hAI){setTimeout(function(){var bm=bestAI(hB,4,hEp,hCr);if(bm){hHist.push({b:hB.slice(),t:hT,s:null,l:[],lv:hLmv,cr:Object.assign({},hCr),ep:hEp});var r2=applyM(bm,hB,hEp,hCr);hB=r2.b;hEp=r2.ep;hCr=r2.cr;hLmv=bm;hT=Op(hT);renderHome();homeCheckEnd();}},300);}}
+      if(!ended&&hT==='b'&&hAI){var _htb=document.getElementById('hThinkBar');if(_htb)_htb.style.display='block';setTimeout(function(){var bm=bestAI(hB,4,hEp,hCr);if(bm){hHist.push({b:hB.slice(),t:hT,s:null,l:[],lv:hLmv,cr:Object.assign({},hCr),ep:hEp});var r2=applyM(bm,hB,hEp,hCr);hB=r2.b;hEp=r2.ep;hCr=r2.cr;hLmv=bm;hT=Op(hT);renderHome();homeCheckEnd();}var _htb2=document.getElementById('hThinkBar');if(_htb2)_htb2.style.display='none';},300);}}
     else{hSel=null;hLm=[];renderHome();}}}
 function resetHome(){hB=mkB();hT='w';hSel=null;hLm=[];hLmv=null;hCr={wK:1,wQ:1,bK:1,bQ:1};hEp=null;hHist=[];hGO=false;renderHome();var st=document.getElementById('hSt');if(st)st.textContent='White to move';}
 function undoHome(){if(!hHist.length)return;var h=hHist.pop();hB=h.b;hT=h.t;hSel=h.s;hLm=h.l;hLmv=h.lv;hCr=h.cr;hEp=h.ep;hGO=false;renderHome();homeCheckEnd();}
-function toggleAI(){hAI=!hAI;var btn=document.getElementById('aiBtn');if(btn)btn.textContent='AI: '+(hAI?'ON':'OFF');if(hAI&&hT==='b'&&!hGO){var bm=bestAI(hB,4,hEp,hCr);if(bm){var res=applyM(bm,hB,hEp,hCr);hB=res.b;hEp=res.ep;hCr=res.cr;hLmv=bm;hT=Op(hT);renderHome();homeCheckEnd();}}}
+function toggleAI(){hAI=!hAI;var btn=document.getElementById('aiBtn');if(btn)btn.textContent='AI: '+(hAI?'ON':'OFF');if(hAI&&hT==='b'&&!hGO){var htbT=document.getElementById('hThinkBar');if(htbT)htbT.style.display='block';var bm=bestAI(hB,4,hEp,hCr);if(bm){var res=applyM(bm,hB,hEp,hCr);hB=res.b;hEp=res.ep;hCr=res.cr;hLmv=bm;hT=Op(hT);renderHome();homeCheckEnd();}var htbT2=document.getElementById('hThinkBar');if(htbT2)htbT2.style.display='none';}}
 
 var pB=mkB(),pT='w',pSel=null,pLm=[],pLmv=null,pCr={wK:1,wQ:1,bK:1,bQ:1},pEp=null,pHist=[],pMH=[],pGO=false,pMode='ai',pColor='w';
 function renderPlay(){
