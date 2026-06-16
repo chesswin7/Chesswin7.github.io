@@ -1186,8 +1186,12 @@ function loadLB(){
     // If we have real players, show only them; otherwise show fake data
     var players=realPlayers.length>0?realPlayers:FAKE_LB;
     players.sort(function(a,b){return(b.r||b.rating||0)-(a.r||a.rating||0);});
+    window._lastLBPlayers=players;
     buildLB(players);buildTicker(players);
-  }).catch(function(){buildLB(FAKE_LB);buildTicker(FAKE_LB);});
+  }).catch(function(){
+    window._lastLBPlayers=FAKE_LB;
+    buildLB(FAKE_LB);buildTicker(FAKE_LB);
+  });
 }
 
 function buildTicker(players){
@@ -1601,26 +1605,18 @@ function submitWithdrawal(){
     if(!amt||amt<10){toast('Minimum 10 USDT','err');return;}
     if(!wallet){toast('Enter wallet address','err');return;}
     if(bal<amt){toast('Insufficient balance! You have '+bal+' COINS','err');return;}
-    // FIX 3: Deduct coins immediately on submission (before admin approval)
-    // This locks the funds — admin then approves/rejects
-    return db.collection('users').doc(window.currentUser.uid).update({
-      coins:firebase.firestore.FieldValue.increment(-amt)
-    }).then(function(){
-      return db.collection('withdrawals').add({
-        userId:window.currentUser.uid,
-        username:safeText(window.currentUserData?window.currentUserData.username:''),
-        email:safeText(window.currentUser.email),
-        amount:amt,wallet:wallet,status:'pending',
-        createdAt:firebase.firestore.FieldValue.serverTimestamp()
-      });
+    // Coins stay in user account until admin approves
+    // On approve: admin panel deducts. On reject: nothing needed (coins safe).
+    return db.collection('withdrawals').add({
+      userId:window.currentUser.uid,
+      username:safeText(window.currentUserData?window.currentUserData.username:''),
+      email:safeText(window.currentUser.email),
+      amount:amt,wallet:wallet,status:'pending',
+      balanceAtRequest:bal,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
     }).then(function(ref){
       if(!ref)return;
-      // Update local balance immediately
-      if(window.currentUserData){
-        window.currentUserData.coins=Math.max(0,(window.currentUserData.coins||0)-amt);
-        updateProfilePage(window.currentUserData);
-      }
-      toast('✓ Withdrawal request submitted! '+amt+' COINS deducted from your balance.','ok');
+      toast('Withdrawal request submitted! Pending admin approval.','ok');
       document.getElementById('wdAmt').value='';document.getElementById('wdWallet').value='';
       loadWithdrawalHistory();
       sendEmail({action:'notify-withdrawal',username:safeText(window.currentUserData?window.currentUserData.username:''),userEmail:safeText(window.currentUser.email),amount:amt,wallet:wallet});
@@ -2028,6 +2024,8 @@ function setLang(code){
   // FAQ
   setText('faqTag',tr.faqTag);setText('faqTitle',tr.faqTitle);
   buildFAQ(); // rebuild with new language
+  // FIX 1: Rebuild ticker after lang change so it doesn't go blank
+  buildTicker(window._lastLBPlayers||FAKE_LB);
 
   // Language/Support section
   setText('langTag',tr.langTag);setText('langTitle',tr.langTitle);
@@ -2046,6 +2044,80 @@ function setLang(code){
   document.querySelectorAll('[data-sec="account"]').forEach(function(el){el.textContent=tr.sbAccount;});
   document.querySelectorAll('[data-sec="support"]').forEach(function(el){el.textContent=tr.sbSupport;});
   document.querySelectorAll('[data-sec="more_lang"]').forEach(function(el){el.textContent=tr.sbLang;});
+
+  // FIX 3: Sidebar link text translation
+  var sbLinkMap={'sb_home':tr.sbHome,'tourn_1v1':tr.sb1v1,'sb_promotions':tr.sbPromotions,
+    'sb_deposit':tr.sbDeposit,'sb_withdraw':tr.sbWithdraw,
+    'sb_stats':tr.sbStats,'sb_profile':tr.sbProfile,'sb_theme':tr.sbTheme};
+  document.querySelectorAll('[data-link]').forEach(function(el){
+    var key=el.getAttribute('data-link');
+    if(!sbLinkMap[key])return;
+    var nodes=el.childNodes;
+    for(var ni=0;ni<nodes.length;ni++){
+      if(nodes[ni].nodeType===3&&nodes[ni].textContent.trim()){
+        nodes[ni].textContent=sbLinkMap[key];break;
+      }
+    }
+  });
+  // Tournaments link text
+  var sbTournEl=document.getElementById('sbTourn');
+  if(sbTournEl){var nodes=sbTournEl.childNodes;for(var ni=0;ni<nodes.length;ni++){if(nodes[ni].nodeType===3&&nodes[ni].textContent.trim()){nodes[ni].textContent=tr.sbTournaments||'Tournaments';break;}}}
+  // Sidebar support button
+  document.querySelectorAll('.sb-support-btn').forEach(function(btn){
+    var ds=btn.querySelectorAll('div > div');
+    if(ds[0])ds[0].textContent=tr.sbLiveSupport||'Live Support';
+    if(ds[1])ds[1].textContent=tr.sbOnlineNow||'Online Now';
+  });
+
+  // FIX 3: Profile dropdown items
+  var pDrop=document.getElementById('pDrop');
+  if(pDrop){
+    var items=pDrop.querySelectorAll('.drop-item');
+    var dl=[tr.sbProfile,tr.sbStats,tr.sbDeposit,tr.sbWithdraw,'Account Statement',tr.sbPromotions,tr.logoutBtn];
+    var dlEmoji=['??','??','??','??','??','??','??'];
+    items.forEach(function(item,i){if(dl[i])item.textContent=dlEmoji[i]+' '+dl[i];});
+  }
+
+  // FIX 3: Navbar buttons translation
+  var hRight=document.getElementById('headerRight');
+  if(hRight&&window.currentUser){
+    var depBtn=hRight.querySelector('button:first-child');
+    var wdBtn=hRight.querySelector('button:nth-child(2)');
+    if(depBtn)depBtn.textContent='?? '+(tr.sbDeposit||'Deposit');
+    if(wdBtn)wdBtn.textContent='?? '+(tr.sbWithdraw||'Withdraw');
+  }
+
+  // FIX 3: Mobile drawer
+  var mobAuth=document.getElementById('mobAuthLinks');
+  if(mobAuth){
+    mobAuth.querySelectorAll('[data-link]').forEach(function(el){
+      var key=el.getAttribute('data-link');
+      if(!sbLinkMap[key])return;
+      var nodes=el.childNodes;
+      for(var ni=0;ni<nodes.length;ni++){if(nodes[ni].nodeType===3&&nodes[ni].textContent.trim()){nodes[ni].textContent=sbLinkMap[key];break;}}
+    });
+    mobAuth.querySelectorAll('button').forEach(function(btn){
+      var t=btn.textContent;
+      if(t.indexOf('Deposit')!==-1||t.indexOf(tr.sbDeposit)!==-1)btn.textContent='?? '+(tr.sbDeposit||'Deposit');
+      else if(t.indexOf('Withdraw')!==-1||t.indexOf(tr.sbWithdraw)!==-1)btn.textContent='?? '+(tr.sbWithdraw||'Withdraw');
+    });
+    mobAuth.querySelectorAll('[data-sec]').forEach(function(el){
+      var sec=el.getAttribute('data-sec');
+      if(sec==='main')el.textContent=tr.sbMain;
+      else if(sec==='finance')el.textContent=tr.sbFinance;
+      else if(sec==='account')el.textContent=tr.sbAccount;
+      else if(sec==='support')el.textContent=tr.sbSupport;
+    });
+  }
+
+  // FIX 3: Guest nav
+  var gNav=document.getElementById('guestNav');
+  if(gNav&&!window.currentUser){
+    var gBtns=gNav.querySelectorAll('a');
+    if(gBtns[0])gBtns[0].textContent=tr.sbHome||'Home';
+    if(gBtns[1])gBtns[1].textContent=tr.playTag||'Play';
+    if(gBtns[2])gBtns[2].textContent=tr.arenaTag||'Arena';
+  }
 
   // Play page
   setText('playTag',tr.playTag);setText('playTitle',tr.playTitle);
