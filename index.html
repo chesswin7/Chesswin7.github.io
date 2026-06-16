@@ -2116,7 +2116,7 @@ function setLang(code){
   if(pDrop){
     var items=pDrop.querySelectorAll('.drop-item');
     var dl=[tr.sbProfile,tr.sbStats,tr.sbDeposit,tr.sbWithdraw,'Account Statement',tr.sbPromotions,tr.logoutBtn];
-    var dlIcons=['??','??','??','??','??','??','??'];
+    var dlIcons=['👤','📊','💰','💸','📋','🎁','🚪'];
     items.forEach(function(item,i){if(dl[i])item.textContent=dlIcons[i]+' '+dl[i];});
   }
 
@@ -2125,8 +2125,8 @@ function setLang(code){
   if(hRight&&window.currentUser){
     var depBtn=hRight.querySelector('button:first-child');
     var wdBtn=hRight.querySelector('button:nth-child(2)');
-    if(depBtn)depBtn.textContent='?? '+(tr.sbDeposit||'Deposit');
-    if(wdBtn)wdBtn.textContent='?? '+(tr.sbWithdraw||'Withdraw');
+    if(depBtn)depBtn.textContent='💰 '+(tr.sbDeposit||'Deposit');
+    if(wdBtn)wdBtn.textContent='💸 '+(tr.sbWithdraw||'Withdraw');
   }
 
   // FIX 3: Mobile drawer
@@ -2140,8 +2140,8 @@ function setLang(code){
     });
     mobAuth.querySelectorAll('button').forEach(function(btn){
       var t=btn.textContent;
-      if(t.indexOf('Deposit')!==-1||t.indexOf(tr.sbDeposit)!==-1)btn.textContent='?? '+(tr.sbDeposit||'Deposit');
-      else if(t.indexOf('Withdraw')!==-1||t.indexOf(tr.sbWithdraw)!==-1)btn.textContent='?? '+(tr.sbWithdraw||'Withdraw');
+      if(t.indexOf('Deposit')!==-1||t.indexOf(tr.sbDeposit)!==-1)btn.textContent='💰 '+(tr.sbDeposit||'Deposit');
+      else if(t.indexOf('Withdraw')!==-1||t.indexOf(tr.sbWithdraw)!==-1)btn.textContent='💸 '+(tr.sbWithdraw||'Withdraw');
     });
     mobAuth.querySelectorAll('[data-sec]').forEach(function(el){
       var sec=el.getAttribute('data-sec');
