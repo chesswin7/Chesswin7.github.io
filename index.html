@@ -132,9 +132,11 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
-.sq.lm::after{content:'';position:absolute;width:28%;height:28%;border-radius:50%;background:#00e701}
-.sq.lc::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 3px #00e701}
-.sq:hover{filter:brightness(1.4)}
+.sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.8);z-index:1;pointer-events:none}
+.sq.lc::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 min(4px,10%) rgba(0,231,1,.9);z-index:1;pointer-events:none}
+.sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.35);z-index:1;pointer-events:none}
+.sq.lmv::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.25);z-index:1;pointer-events:none}
+.sq:hover{filter:brightness(1.3)}
 .piece{pointer-events:none;user-select:none;line-height:1}
 .board-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap;align-items:center;width:100%}
 .profile-btn{position:relative;width:36px;height:36px;border-radius:50%;background:var(--surface2);border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;direction:ltr}
@@ -1110,9 +1112,9 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     var idx=flip?63-vi:vi;var r=Rw(idx),c=Cw(idx);
     var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
     var isDark=(r+c)%2===0;
-    if(lmv&&(idx===lmv.f||idx===lmv.t)){sq.style.background=isDark?'rgba(0,231,1,.35)':'rgba(0,231,1,.45)';}
-    else if(idx===sel){sq.style.background='rgba(0,231,1,.5)';sq.style.boxShadow='';}
-    else sq.style.background=isDark?getDark():getLight();
+    sq.style.background=isDark?getDark():getLight();
+    if(lmv&&(idx===lmv.f||idx===lmv.t))sq.classList.add('lmv');
+    if(idx===sel)sq.classList.add('sel');
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
     if(brd[idx]){
       var sp=document.createElement('img');
@@ -1283,134 +1285,136 @@ function startAI(){
 // ── ROOM CREATION (Firebase Realtime DB) ──
 var _roomCode=null, _roomRef=null, _roomListener=null;
 
+// ── ROOM & MATCHMAKING via Firestore (no RTDB rules needed) ──
+var _roomCode=null,_roomUnsub=null,_matchUnsub=null,_matchDocId=null;
+
 function createRoom(){
   if(!window.currentUser){openAuth('login');return;}
   var tc=parseInt(document.getElementById('ftc').value)||600;
-  // Generate 6-char room code
   _roomCode=Math.random().toString(36).substr(2,6).toUpperCase();
-  var roomData={
-    host:window.currentUser.uid,
-    hostName:safeText(window.currentUserData?window.currentUserData.username:'Player'),
-    guest:null,guestName:null,
-    tc:tc,status:'waiting',
-    createdAt:firebase.database.ServerValue.TIMESTAMP
-  };
-  _roomRef=rtdb.ref('rooms/'+_roomCode);
-  _roomRef.set(roomData).then(function(){
+  var myName=safeText(window.currentUserData?window.currentUserData.username:'Player');
+  db.collection('rooms').doc(_roomCode).set({
+    host:window.currentUser.uid,hostName:myName,
+    guest:null,guestName:null,tc:tc,status:'waiting',
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
     document.getElementById('roomDisplay').style.display='block';
     document.getElementById('roomCode').textContent=_roomCode;
     toast('Room created! Share code: '+_roomCode,'ok');
-    // Listen for guest to join
-    _roomRef.on('value',function(snap){
-      var d=snap.val();
-      if(!d)return;
+    // Listen for guest joining
+    if(_roomUnsub)_roomUnsub();
+    _roomUnsub=db.collection('rooms').doc(_roomCode).onSnapshot(function(snap){
+      var d=snap.data();if(!d)return;
       if(d.guest&&d.status==='ready'){
-        // Guest joined — start game as White
-        _roomRef.off('value');
+        if(_roomUnsub){_roomUnsub();_roomUnsub=null;}
         pColor='w';pMode='friend';
         document.getElementById('oppName').textContent=safeText(d.guestName||'Guest');
-        document.getElementById('meName').textContent=safeText(roomData.hostName)+' (White)';
-        resetPlay();
-        startTimer(tc,tc,true); // host goes first
+        document.getElementById('meName').textContent=myName+' (White)';
+        resetPlay();startTimer(tc,tc,true);
         document.getElementById('roomDisplay').style.display='none';
         toast('Game started! You are White.','ok');
       }
     });
-  }).catch(function(e){toast('Error: '+e.message,'err');});
+  }).catch(function(e){toast('Error creating room: '+e.message,'err');});
 }
 
 function joinRoom(){
   if(!window.currentUser){openAuth('login');return;}
   var code=(document.getElementById('joinCode').value||'').trim().toUpperCase();
   if(!code||code.length<4){toast('Enter a valid room code','err');return;}
-  var ref=rtdb.ref('rooms/'+code);
-  ref.once('value').then(function(snap){
-    var d=snap.val();
-    if(!d){toast('Room not found','err');return;}
-    if(d.status!=='waiting'){toast('Room is full or game already started','err');return;}
-    var myName=safeText(window.currentUserData?window.currentUserData.username:'Guest');
-    return ref.update({guest:window.currentUser.uid,guestName:myName,status:'ready'}).then(function(){
-      _roomCode=code;_roomRef=ref;
-      pColor='b';pMode='friend';
+  var myName=safeText(window.currentUserData?window.currentUserData.username:'Guest');
+  db.collection('rooms').doc(code).get().then(function(snap){
+    if(!snap.exists){toast('Room not found: '+code,'err');return;}
+    var d=snap.data();
+    if(d.status!=='waiting'){toast('Room is full or already started','err');return;}
+    if(d.host===window.currentUser.uid){toast('You cannot join your own room','err');return;}
+    return db.collection('rooms').doc(code).update({
+      guest:window.currentUser.uid,guestName:myName,status:'ready'
+    }).then(function(){
+      _roomCode=code;pColor='b';pMode='friend';
       document.getElementById('oppName').textContent=safeText(d.hostName||'Host');
       document.getElementById('meName').textContent=myName+' (Black)';
-      resetPlay();
-      startTimer(d.tc,d.tc,false); // host goes first, not me
-      toast('Joined room '+code+'! You are Black.','ok');
-      // Listen for moves (future: sync moves via RTDB)
+      resetPlay();startTimer(d.tc,d.tc,false);
+      toast('Joined! You are Black. Game starting...','ok');
     });
   }).catch(function(e){toast('Error: '+e.message,'err');});
 }
 
-// ── MATCHMAKING (Firebase Realtime DB) ──
-var _matchRef=null;
 function startMatch(){
   if(!window.currentUser){openAuth('login');return;}
   var btn=document.getElementById('matchBtn');
   var stEl=document.getElementById('matchSt');
-  // If already searching, cancel
   if(btn&&btn.dataset.searching==='1'){
-    if(_matchRef)_matchRef.remove();
-    btn.dataset.searching='0';
-    btn.textContent='Find Opponent';
+    // Cancel search
+    if(_matchUnsub){_matchUnsub();_matchUnsub=null;}
+    if(_matchDocId)db.collection('matchQueue').doc(_matchDocId).delete().catch(function(){});
+    _matchDocId=null;
+    if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
     if(stEl)stEl.style.display='none';
     return;
   }
   var tc=parseInt(document.getElementById('mtc').value)||600;
-  if(btn){btn.dataset.searching='1';btn.textContent='Cancel Search';}
+  if(btn){btn.dataset.searching='1';btn.textContent='Cancel';}
   if(stEl)stEl.style.display='block';
   var myName=safeText(window.currentUserData?window.currentUserData.username:'Player');
   var myRating=(window.currentUserData&&window.currentUserData.rating)||0;
-  // Look for existing waiting player
-  var queueRef=rtdb.ref('matchQueue');
-  queueRef.orderByChild('tc').equalTo(tc).limitToFirst(5).once('value').then(function(snap){
+  // Find someone waiting for same time control
+  db.collection('matchQueue').where('tc','==',tc).where('status','==','waiting').limit(5).get().then(function(snap){
     var found=null;
-    snap.forEach(function(child){
-      var d=child.val();
-      if(d.uid!==window.currentUser.uid&&!d.matched){found={key:child.key,data:d};return true;}
+    snap.forEach(function(doc){
+      var d=doc.data();
+      if(d.uid!==window.currentUser.uid){found={id:doc.id,data:d};}
     });
     if(found){
-      // Found opponent — join their game
-      var oppRef=rtdb.ref('matchQueue/'+found.key);
-      oppRef.update({matched:window.currentUser.uid,matchedName:myName}).then(function(){
-        oppRef.off();
+      // Join existing match
+      db.collection('matchQueue').doc(found.id).update({
+        status:'matched',matchedUid:window.currentUser.uid,matchedName:myName
+      }).then(function(){
         pColor='b';pMode='friend';
         document.getElementById('oppName').textContent=safeText(found.data.name||'Opponent');
         document.getElementById('meName').textContent=myName+' (Black)';
-        resetPlay();
-        startTimer(tc,tc,false);
+        resetPlay();startTimer(tc,tc,false);
         if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
         if(stEl)stEl.style.display='none';
         toast('Match found! You are Black.','ok');
       });
     } else {
-      // Add self to queue and wait
-      _matchRef=queueRef.push({uid:window.currentUser.uid,name:myName,rating:myRating,tc:tc,matched:null,ts:firebase.database.ServerValue.TIMESTAMP});
-      // Listen for someone to match us
-      _matchRef.on('value',function(snap2){
-        var d2=snap2.val();
-        if(!d2)return;
-        if(d2.matched&&d2.matched!==window.currentUser.uid){
-          _matchRef.off('value');_matchRef.remove();
-          pColor='w';pMode='friend';
-          document.getElementById('oppName').textContent=safeText(d2.matchedName||'Opponent');
-          document.getElementById('meName').textContent=myName+' (White)';
-          resetPlay();
-          startTimer(tc,tc,true);
-          if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
-          if(stEl)stEl.style.display='none';
-          toast('Match found! You are White.','ok');
-        }
+      // Add self to queue
+      db.collection('matchQueue').add({
+        uid:window.currentUser.uid,name:myName,rating:myRating,
+        tc:tc,status:'waiting',
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function(ref){
+        _matchDocId=ref.id;
+        // Listen for someone to match us
+        if(_matchUnsub)_matchUnsub();
+        _matchUnsub=ref.onSnapshot(function(snap){
+          var d=snap.data();if(!d)return;
+          if(d.status==='matched'&&d.matchedUid!==window.currentUser.uid){
+            if(_matchUnsub){_matchUnsub();_matchUnsub=null;}
+            ref.delete().catch(function(){});
+            _matchDocId=null;
+            pColor='w';pMode='friend';
+            document.getElementById('oppName').textContent=safeText(d.matchedName||'Opponent');
+            document.getElementById('meName').textContent=myName+' (White)';
+            resetPlay();startTimer(tc,tc,true);
+            if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
+            if(stEl)stEl.style.display='none';
+            toast('Match found! You are White.','ok');
+          }
+        });
+        // Timeout after 2 min
+        setTimeout(function(){
+          if(btn&&btn.dataset.searching==='1'){
+            if(_matchUnsub){_matchUnsub();_matchUnsub=null;}
+            if(_matchDocId)db.collection('matchQueue').doc(_matchDocId).delete().catch(function(){});
+            _matchDocId=null;
+            if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
+            if(stEl)stEl.style.display='none';
+            toast('No opponent found. Try again.','info');
+          }
+        },120000);
       });
-      // Auto-cleanup after 2 minutes if no match
-      setTimeout(function(){
-        if(btn&&btn.dataset.searching==='1'){
-          if(_matchRef)_matchRef.remove();
-          if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
-          if(stEl)stEl.style.display='none';
-          toast('No opponent found. Try again.','info');
-        }
-      },120000);
     }
   }).catch(function(e){
     if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
