@@ -94,9 +94,27 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .hero h1 span{color:var(--accent)}
 .hero p{font-size:16px;color:var(--muted);line-height:1.7;margin-bottom:32px}
 .hero-btns{display:flex;gap:12px}
-/* ── FIX 6: Exposure always visible, LTR forced ── */
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
+.banner-carousel{position:relative;width:100%;overflow:hidden;background:var(--surface);border-bottom:1px solid var(--border)}
+.banner-track{display:flex;transition:transform .5s ease}
+.banner-slide{min-width:100%;aspect-ratio:10/3;flex-shrink:0}
+.banner-slide.clickable{cursor:pointer}
+.banner-slide img{width:100%;height:100%;object-fit:cover;display:block}
+.banner-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(15,33,46,.7);border:1px solid var(--border2);color:#fff;font-size:20px;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.banner-arrow:hover{background:rgba(15,33,46,.95)}
+.banner-arrow.left{left:14px}
+.banner-arrow.right{right:14px}
+.banner-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.banner-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:background .15s}
+.banner-dot.active{background:var(--accent)}
+.banner-skeleton{width:100%;aspect-ratio:10/3;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:bannerShimmer 1.4s ease infinite}
+@keyframes bannerShimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+@media(max-width:900px){
+.banner-slide{aspect-ratio:16/9}
+.banner-skeleton{aspect-ratio:16/9}
+.banner-arrow{width:28px;height:28px;font-size:16px}
+}
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);direction:ltr}
 .stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
 .stat-item:last-child{border-right:none}
@@ -195,7 +213,6 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 .balance-box{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
 .bal-label{font-size:12px;color:var(--muted);font-weight:600}
 .bal-value{font-size:20px;font-weight:900;color:var(--accent)}
-/* ── FIX 6: Profile page RTL fixes ── */
 .profile-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;margin-bottom:20px}
 .profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--surface2);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 14px}
 .profile-name{font-size:20px;font-weight:900;margin-bottom:4px}
@@ -204,7 +221,6 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 .pstat{background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center}
 .pstat-val{font-size:20px;font-weight:900;color:var(--accent);direction:ltr}
 .pstat-lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-/* FIX 6: tier badge always LTR and visible */
 .tier-badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);direction:ltr;white-space:nowrap;min-width:60px;text-align:center}
 .hist-table{width:100%;border-collapse:collapse}
 .hist-table th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 12px;background:var(--surface2);text-align:left;border-bottom:1px solid var(--border)}
@@ -493,6 +509,15 @@ function _removeLoadBar(){
   </div>
 </header>
 
+<!-- HOMEPAGE BANNERS -->
+<div id="bannerCarousel" class="banner-carousel">
+  <div id="bannerSkeleton" class="banner-skeleton"></div>
+  <button class="banner-arrow left" onclick="bannerNav(-1)" style="display:none">‹</button>
+  <div class="banner-track" id="bannerTrack"></div>
+  <button class="banner-arrow right" onclick="bannerNav(1)" style="display:none">›</button>
+  <div class="banner-dots" id="bannerDots"></div>
+</div>
+
 <!-- APP -->
 <div class="app">
 
@@ -709,7 +734,6 @@ function _removeLoadBar(){
     </div>
   </div>
 </div>
-
 <!-- PLAY PAGE -->
 <div class="page" id="page-play">
   <div style="margin-bottom:24px">
@@ -794,7 +818,6 @@ function _removeLoadBar(){
   <h2 id="tournTitle" style="font-size:24px;font-weight:900;margin-bottom:8px">Tournaments</h2>
   <p style="color:var(--muted);margin-bottom:28px" id="tournSubtitle">Join a tournament, compete, and win COINS</p>
 
-  <!-- 1v1 Direct Challenge -->
   <div style="margin-bottom:32px">
     <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">⚔️ Direct Challenge</p>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
@@ -810,7 +833,6 @@ function _removeLoadBar(){
     </div>
   </div>
 
-  <!-- Standard Formats -->
   <div style="margin-bottom:32px">
     <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">🏆 Standard Formats</p>
     <div class="cards-grid">
@@ -844,7 +866,6 @@ function _removeLoadBar(){
     </div>
   </div>
 
-  <!-- Arena Time Controls -->
   <div style="margin-bottom:32px">
     <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">⚡ Arena</p>
     <div class="cards-grid">
@@ -883,7 +904,6 @@ function _removeLoadBar(){
     </div>
   </div>
 
-  <!-- Seasonal -->
   <div style="margin-bottom:32px">
     <p style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f0a500;margin-bottom:12px">🌸 Seasonal</p>
     <div class="cards-grid">
@@ -978,7 +998,6 @@ function _removeLoadBar(){
         <div class="profile-name" id="prof-name">—</div>
         <div class="profile-email" id="prof-email">—</div>
         <div style="margin-bottom:16px"><span class="tier-badge" id="prof-tier">Bronze</span></div>
-        <!-- FIX 6: Profile stats always LTR -->
         <div class="profile-stats" style="direction:ltr">
           <div class="pstat"><div class="pstat-val" id="prof-rating" style="direction:ltr">1200</div><div class="pstat-lbl" id="profLblRating">Rating</div></div>
           <div class="pstat"><div class="pstat-val" id="prof-wins" style="direction:ltr">0</div><div class="pstat-lbl" id="profLblWins">Wins</div></div>
@@ -1021,11 +1040,7 @@ function _removeLoadBar(){
 <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="9996f609-6558-45c0-9897-c0af3e17540b";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
 <div id="supportModal" style="display:none"></div>
 <script>
-// Safe DOM helpers
-// ═══════════════════════════════════════════════════
-//  FIREBASE RTDB — Real-time multiplayer
-//  Rooms, Matchmaking, Move sync — all via Firebase
-// ═══════════════════════════════════════════════════
+function safeText(s){return String(s||'');}
 
 // ── TIMER ──
 var _timerInterval = null;
@@ -1095,26 +1110,22 @@ function fmtTime(s) {
   return m + ':' + (sec < 10 ? '0' : '') + sec;
 }
 
-// ── ROOM STATE ──
 var _roomCode = null;
 var _roomRef = null;
 var _roomListener = null;
-var _myColor = null; // 'white' or 'black'
+var _myColor = null;
 var _lastMoveCount = 0;
 
-// ── HELPER: board index to algebraic ──
 function idxToAlg(idx) {
   var files = 'abcdefgh';
   return files[Cw(idx)] + (8 - Rw(idx));
 }
 
-// ── HELPER: algebraic to board index ──
 function algToIdx(sq) {
   var files = 'abcdefgh';
   return (8 - parseInt(sq[1])) * 8 + files.indexOf(sq[0]);
 }
 
-// ── APPLY OPPONENT MOVE ──
 function applyOpponentMove(from, to, promotion) {
   var fi = algToIdx(from);
   var ti = algToIdx(to);
@@ -1130,15 +1141,12 @@ function applyOpponentMove(from, to, promotion) {
   pB = res.b; pEp = res.ep; pCr = res.cr;
   pLmv = mv; pT = Op(pT);
   pMH.push(mv); updMoves(); renderPlay();
-  // Switch timer
   if (_timerActive) switchTimerTurn();
-  // Check game end
   playCheckEnd();
   var st = document.getElementById('pSt');
   if (st) st.textContent = 'Your move';
 }
 
-// ── LISTEN FOR OPPONENT MOVES ──
 function listenForMoves(roomCode, myColor) {
   if (_roomListener) { _roomRef.off('value', _roomListener); }
   _roomRef = rtdb.ref('rooms/' + roomCode);
@@ -1148,15 +1156,12 @@ function listenForMoves(roomCode, myColor) {
     var d = snap.val();
     if (!d) return;
 
-    // Check for moves
     if (d.moves) {
       var moveKeys = Object.keys(d.moves);
       if (moveKeys.length > _lastMoveCount) {
-        // New moves arrived
         for (var i = _lastMoveCount; i < moveKeys.length; i++) {
           var mv = d.moves[moveKeys[i]];
-          // Only apply if it's opponent's move
-          var moverColor = mv.color; // 'white' or 'black'
+          var moverColor = mv.color;
           if (moverColor !== myColor) {
             applyOpponentMove(mv.from, mv.to, mv.promotion);
           }
@@ -1165,7 +1170,6 @@ function listenForMoves(roomCode, myColor) {
       }
     }
 
-    // Check game status
     if (d.status === 'ended' && !pGO) {
       pGO = true;
       stopTimer();
@@ -1174,7 +1178,6 @@ function listenForMoves(roomCode, myColor) {
       toast(d.result || 'Game over', 'info');
     }
 
-    // Draw offer
     if (d.drawOffer && d.drawOffer !== myColor) {
       if (!d.drawAnswered) {
         if (confirm('Opponent offers a draw. Accept?')) {
@@ -1189,20 +1192,17 @@ function listenForMoves(roomCode, myColor) {
       toast('Opponent declined draw', 'info');
     }
 
-    // Opponent disconnected
     if (d.disconnected && d.disconnected !== myColor) {
       toast('Opponent disconnected!', 'err');
     }
   });
 }
 
-// ── CREATE ROOM ──
 function createRoom() {
   if (!window.currentUser) { openAuth('login'); return; }
   var tc = parseInt(document.getElementById('ftc').value) || 600;
   var myName = safeText(window.currentUserData ? window.currentUserData.username : 'Player');
 
-  // Generate unique 6-char code
   var code = Math.random().toString(36).substr(2, 6).toUpperCase();
   _roomCode = code;
   _myColor = 'white';
@@ -1220,11 +1220,9 @@ function createRoom() {
     document.getElementById('roomCode').textContent = code;
     toast('Room created! Share code: ' + code, 'ok');
 
-    // Listen for guest to join
     rtdb.ref('rooms/' + code + '/status').on('value', function(snap) {
       if (snap.val() === 'playing') {
         rtdb.ref('rooms/' + code + '/status').off('value');
-        // Get guest name
         rtdb.ref('rooms/' + code + '/guestName').once('value').then(function(s) {
           var guestName = s.val() || 'Guest';
           pColor = 'w'; pMode = 'friend'; _myColor = 'white';
@@ -1242,7 +1240,6 @@ function createRoom() {
   }).catch(function(e) { toast('Error: ' + e.message, 'err'); });
 }
 
-// ── JOIN ROOM ──
 function joinRoom() {
   if (!window.currentUser) { openAuth('login'); return; }
   var code = (document.getElementById('joinCode').value || '').trim().toUpperCase();
@@ -1255,7 +1252,6 @@ function joinRoom() {
     if (d.status !== 'waiting') { toast('Room already started or full', 'err'); return; }
     if (d.host === window.currentUser.uid) { toast('Cannot join your own room', 'err'); return; }
 
-    // Join the room
     return rtdb.ref('rooms/' + code).update({
       guest: window.currentUser.uid,
       guestName: myName,
@@ -1267,7 +1263,7 @@ function joinRoom() {
       document.getElementById('meName').textContent = myName + ' (Black)';
       resetPlay();
       var tc = d.tc || 600;
-      if (tc > 0) startGameTimer(tc, false); // host goes first
+      if (tc > 0) startGameTimer(tc, false);
       else { document.getElementById('meTimer').textContent = '∞'; document.getElementById('oppTimer').textContent = '∞'; }
       toast('Joined! You are Black.', 'ok');
       listenForMoves(code, 'black');
@@ -1275,7 +1271,6 @@ function joinRoom() {
   }).catch(function(e) { toast('Error: ' + e.message, 'err'); });
 }
 
-// ── MATCHMAKING ──
 var _matchRef = null;
 var _matchListener = null;
 
@@ -1284,7 +1279,6 @@ function startMatch() {
   var btn = document.getElementById('matchBtn');
   var stEl = document.getElementById('matchSt');
 
-  // Cancel if already searching
   if (btn && btn.dataset.searching === '1') {
     if (_matchRef) { _matchRef.off('value', _matchListener); _matchRef.remove(); _matchRef = null; }
     if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
@@ -1300,28 +1294,24 @@ function startMatch() {
   if (btn) { btn.dataset.searching = '1'; btn.textContent = 'Cancel'; }
   if (stEl) stEl.style.display = 'block';
 
-  // Look for waiting player with same tc
   rtdb.ref('matchQueue').orderByChild('tc').equalTo(tc).limitToFirst(10).once('value').then(function(snap) {
     var found = null;
     snap.forEach(function(child) {
       var d = child.val();
       if (d.uid !== window.currentUser.uid && !d.matched) {
         found = { key: child.key, data: d };
-        return true; // break
+        return true;
       }
     });
 
     if (found) {
-      // Found opponent — create room
       var code = Math.random().toString(36).substr(2, 6).toUpperCase();
-      // Mark queue entry as matched
       rtdb.ref('matchQueue/' + found.key).update({
         matched: window.currentUser.uid,
         matchedName: myName,
         roomCode: code
       });
 
-      // Determine colors randomly
       var iAmWhite = Math.random() > 0.5;
       _roomCode = code; _myColor = iAmWhite ? 'white' : 'black';
 
@@ -1344,12 +1334,10 @@ function startMatch() {
         toast('Match found! You are ' + (iAmWhite ? 'White' : 'Black') + '.', 'ok');
         listenForMoves(code, _myColor);
 
-        // Notify the other player via their queue entry
         rtdb.ref('matchQueue/' + found.key).update({ roomCode: code, status: 'matched' });
       });
 
     } else {
-      // Add self to queue and wait
       _matchRef = rtdb.ref('matchQueue').push({
         uid: window.currentUser.uid,
         name: myName,
@@ -1360,7 +1348,6 @@ function startMatch() {
         ts: firebase.database.ServerValue.TIMESTAMP
       });
 
-      // Listen for match
       _matchListener = _matchRef.on('value', function(snap2) {
         var d2 = snap2.val();
         if (!d2) return;
@@ -1371,7 +1358,6 @@ function startMatch() {
           var code = d2.roomCode;
           _roomCode = code;
 
-          // Get room to know my color
           rtdb.ref('rooms/' + code).once('value').then(function(rSnap) {
             var rd = rSnap.val();
             if (!rd) return;
@@ -1391,7 +1377,6 @@ function startMatch() {
         }
       });
 
-      // Auto cancel after 2 minutes
       setTimeout(function() {
         if (btn && btn.dataset.searching === '1') {
           if (_matchRef) { _matchRef.off('value', _matchListener); _matchRef.remove(); _matchRef = null; }
@@ -1408,7 +1393,6 @@ function startMatch() {
   });
 }
 
-function safeText(s){return String(s||'');}
 function makeSafeEl(tag,cls,text){var el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=safeText(text);return el;}
 
 var WORKER_URL='https://chesswin7-email.jmchelp1.workers.dev';
@@ -1473,13 +1457,11 @@ function bestAI(b,d,ep,cr){
   return bm;
 }
 
-// Lightbox
 function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open');document.body.style.overflow='hidden';}
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open');document.body.style.overflow='';}
 document.getElementById('lightbox').addEventListener('click',function(e){if(e.target===this||e.target.classList.contains('lightbox-close'))closeLightbox();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox();});
 
-// Board themes
 var THEMES=[
   {name:'Classic Blue',dark:'#1a2c38',light:'#213743'},{name:'Walnut Brown',dark:'#5c3a1e',light:'#c8a97e'},
   {name:'Ocean Blue',dark:'#0d3b6e',light:'#4e9fd4'},{name:'Forest Green',dark:'#1a5c2a',light:'#4caf72'},
@@ -1576,7 +1558,6 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
       pHist.push({b:pB.slice(),t:pT,s:pSel,l:pLm.slice(),lv:pLmv,cr:Object.assign({},pCr),ep:pEp});
       var res=applyM(mv,pB,pEp,pCr);pB=res.b;pEp=res.ep;pCr=res.cr;pLmv=mv;pSel=null;pLm=[];pT=Op(pT);pMH.push(mv);updMoves();renderPlay();
       if(pMode==='friend'&&_roomCode&&_myColor){
-        // Broadcast move via Firebase RTDB
         var fromSq=idxToAlg(mv.f);
         var toSq=idxToAlg(mv.t);
         rtdb.ref('rooms/'+_roomCode+'/moves').push({
@@ -1586,7 +1567,6 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
           promotion:mv.pro?'q':null,
           ts:firebase.database.ServerValue.TIMESTAMP
         });
-        // Switch timer
         if(_timerActive)switchTimerTurn();
       }
       var ended=playCheckEnd();
@@ -1643,116 +1623,6 @@ function resignGame(){
   toast('You resigned','info');
   var st=document.getElementById('pSt');if(st)st.textContent='You resigned';
 }
-// ── TIMER SYSTEM ──
-var _timerInterval=null;
-var _myTime=0, _oppTime=0, _timerActive=false, _myTurn=false;
-
-function startTimer(mySecs, oppSecs, myTurnFirst){
-  clearInterval(_timerInterval);
-  _myTime=mySecs; _oppTime=oppSecs; _myTurn=myTurnFirst; _timerActive=true;
-  updateTimerDisplay();
-  _timerInterval=setInterval(function(){
-    if(!_timerActive)return;
-    if(_myTurn){_myTime--;if(_myTime<=0){_myTime=0;updateTimerDisplay();_timerActive=false;clearInterval(_timerInterval);endGameByTime('opp');return;}}
-    else{_oppTime--;if(_oppTime<=0){_oppTime=0;updateTimerDisplay();_timerActive=false;clearInterval(_timerInterval);endGameByTime('me');return;}}
-    updateTimerDisplay();
-  },1000);
-}
-
-function switchTimerTurn(){_myTurn=!_myTurn;}
-
-function stopTimer(){_timerActive=false;clearInterval(_timerInterval);}
-
-function fmtTime(s){
-  if(s<=0)return'0:00';
-  var m=Math.floor(s/60),sec=s%60;
-  return m+':'+(sec<10?'0':'')+sec;
-}
-
-function updateTimerDisplay(){
-  var me=document.getElementById('meTimer');
-  var opp=document.getElementById('oppTimer');
-  if(me)me.textContent=fmtTime(_myTime);
-  if(opp)opp.textContent=fmtTime(_oppTime);
-  // Visual warning when < 10 seconds
-  if(me){me.style.color=_myTime<=10&&_myTime>0?'#f93848':'';me.style.fontWeight=_myTime<=10?'900':'';}
-  if(opp){opp.style.color=_oppTime<=10&&_oppTime>0?'#f93848':'';opp.style.fontWeight=_oppTime<=10?'900':'';}
-}
-
-function endGameByTime(loser){
-  pGO=true;
-  var st=document.getElementById('pSt');
-  if(loser==='me'){if(st)st.textContent='Time up! You lose.';}
-  else{if(st)st.textContent='Time up! Opponent loses. You win!';}
-  toast(loser==='me'?'Time up — you lose!':'Time up — you win!', loser==='me'?'err':'ok');
-}
-
-// Override startAI to use timer
-var _origStartAI=startAI;
-function startAI(){
-  stopTimer();
-  _origStartAI();
-  var tc=parseInt(document.getElementById('aiDiff')?0:0)||0;
-  // No timer for vs AI by default (AI doesn't need time pressure)
-  var meEl=document.getElementById('meTimer');
-  var oppEl=document.getElementById('oppTimer');
-  if(meEl)meEl.textContent='—';
-  if(oppEl)oppEl.textContent='—';
-}
-
-// ── ROOM CREATION (Firebase Realtime DB) ──
-var _roomCode=null, _roomRef=null, _roomListener=null;
-
-// ── ROOM & MATCHMAKING via Socket.IO ──
-var _roomCode=null,_roomUnsub=null,_matchUnsub=null,_matchDocId=null;
-
-function createRoom(){
-  if(!window.currentUser){openAuth('login');return;}
-  connectSocket();
-  var tc=parseInt(document.getElementById('ftc').value)||600;
-  socket.emit('create_room',{
-    userId:window.currentUser.uid,
-    username:safeText(window.currentUserData?window.currentUserData.username:'Player'),
-    rating:(window.currentUserData&&window.currentUserData.rating)||0,
-    tc:tc
-  });
-}
-
-function joinRoom(){
-  if(!window.currentUser){openAuth('login');return;}
-  var code=(document.getElementById('joinCode').value||'').trim().toUpperCase();
-  if(!code||code.length<4){toast('Enter a valid room code','err');return;}
-  connectSocket();
-  socket.emit('join_room',{
-    code:code,
-    userId:window.currentUser.uid,
-    username:safeText(window.currentUserData?window.currentUserData.username:'Player'),
-    rating:(window.currentUserData&&window.currentUserData.rating)||0
-  });
-}
-
-function startMatch(){
-  if(!window.currentUser){openAuth('login');return;}
-  var btn=document.getElementById('matchBtn');
-  var stEl=document.getElementById('matchSt');
-  if(btn&&btn.dataset.searching==='1'){
-    connectSocket();
-    socket.emit('cancel_match');
-    if(btn){btn.dataset.searching='0';btn.textContent='Find Opponent';}
-    if(stEl)stEl.style.display='none';
-    return;
-  }
-  connectSocket();
-  var tc=parseInt(document.getElementById('mtc').value)||600;
-  if(btn){btn.dataset.searching='1';btn.textContent='Cancel';}
-  if(stEl)stEl.style.display='block';
-  socket.emit('find_match',{
-    userId:window.currentUser.uid,
-    username:safeText(window.currentUserData?window.currentUserData.username:'Player'),
-    rating:(window.currentUserData&&window.currentUserData.rating)||0,
-    tc:tc
-  });
-}
 function requireLogin(){if(!window.currentUser){openAuth('signup');toast('Please sign up to play tournaments','info');}else{goPage('play');}}
 
 // Mini boards
@@ -1771,8 +1641,6 @@ function animateMiniBoard(data){var col=data.turn;var mvs=allL(col,data.board,da
 function buildMiniBoard(container,themeIdx){var pos=fakeBoardPos(),th=MINI_THEMES[themeIdx%12];var wp=NAMES_W[Math.floor(Math.random()*NAMES_W.length)],bp=NAMES_B[Math.floor(Math.random()*NAMES_B.length)];var wrap=document.createElement('div');wrap.className='mini-card';var lbl=document.createElement('div');lbl.className='mini-label';lbl.style.color=th.light;lbl.textContent=wp+' vs '+bp;var mb=document.createElement('div');mb.className='mini-board';var sub=document.createElement('div');sub.className='mini-sub';sub.textContent=Math.floor(1100+Math.random()*1400)+' · Live';wrap.appendChild(lbl);wrap.appendChild(mb);wrap.appendChild(sub);container.appendChild(wrap);var data={el:mb,board:pos,th:th,turn:'w',ep:null,cr:{wK:1,wQ:1,bK:1,bQ:1},animSq:-1};renderMiniBoard(data);_miniBoards.push(data);}
 function buildMiniBoards(){_miniBoards=[];['rowGold','rowSilver','rowBronze'].forEach(function(id,ri){var row=document.getElementById(id);if(!row)return;row.innerHTML='';for(var i=0;i<4;i++)buildMiniBoard(row,ri*4+i);});_miniBoards.forEach(function(data,i){setInterval(function(){try{animateMiniBoard(data);}catch(e){}},2800+i*300);});}
 
-// ── FIX 4: Leaderboard — only real users, Bronze tier for new users ──
-// FAKE_LB only shown when no real users loaded yet (fallback)
 var FAKE_LB=[
   {u:'KingMosin',r:2450,w:312,c:98000},{u:'DubaiKnight',r:2380,w:287,c:76000},{u:'GoldBishop',r:2315,w:251,c:62000},
   {u:'SilverRook99',r:2290,w:234,c:48500},{u:'PawnStorm',r:2241,w:198,c:37200},{u:'BlitzKing',r:2200,w:187,c:33400},
@@ -1780,9 +1648,8 @@ var FAKE_LB=[
   {u:'OpeningMaestro',r:2105,w:143,c:21800},{u:'TacticalFox',r:2090,w:138,c:20200},{u:'EndgameWizard',r:2077,w:132,c:18700},
 ];
 
-// ── FIX 4: Correct TIERS — Bronze starts at 0, no Platinum auto-assign ──
 var TIERS=[
-  {n:'Bronze',i:'🥉',min:0,max:9},       // 0–9 rating: brand new users stay Bronze
+  {n:'Bronze',i:'🥉',min:0,max:9},
   {n:'Bronze I',i:'🥉',min:10,max:199},
   {n:'Silver',i:'🥈',min:200,max:499},
   {n:'Gold',i:'🥇',min:500,max:799},
@@ -1794,11 +1661,10 @@ var TIERS=[
   {n:'Grandmaster',i:'♛',min:2400,max:2599},
   {n:'Legend',i:'🌟',min:2600,max:9999}
 ];
-// FIX 4: getTier always returns Bronze (TIERS[0]) for new users with 0 rating
 function getTier(r){
   if(r===undefined||r===null||r<0)return TIERS[0];
   for(var i=TIERS.length-1;i>=0;i--){if(r>=TIERS[i].min)return TIERS[i];}
-  return TIERS[0]; // default: Bronze
+  return TIERS[0];
 }
 
 var lbY=0,lbRaf=null;
@@ -1843,7 +1709,6 @@ function loadLB(){
       u.u=u.username;u.r=u.rating||0;u.w=u.wins||0;u.c=u.coins||0;
       if(u.r>0||u.w>0){realPlayers.push(u);}
     });
-    // Merge real players WITH fake LB — real players override by username
     var players=FAKE_LB.slice();
     realPlayers.forEach(function(rp){
       var dup=players.findIndex(function(p){return p.u===rp.u;});
@@ -1874,7 +1739,6 @@ function buildTicker(players){
   track.appendChild(frag);
 }
 
-// FAQs (unchanged)
 var FAQS_ALL={en:[['What is ChessWin7?','A skill-based online chess platform where players compete and earn real USDT rewards.'],['Is ChessWin7 based on luck?','No. Results depend entirely on player skill, strategy, and chess knowledge.'],['What is the coin value?','1 USDT = 1 COIN on our platform.'],['Does ChessWin7 provide bonuses?','YES! 🏆 Welcome Bonus • Refill Bonus • Loss Bonus Available for All Tiers 🏆'],['What is the minimum deposit?','10 COINS (10 USDT).'],['How are winnings calculated?','A 5% platform fee is deducted. Example: 10 USDT pool → winner gets 9.50 USDT.'],['How do I withdraw?','Go to the Withdrawal page, enter amount and your USDT wallet address. Admin processes within 48 hours.'],['What time controls are available?','UltraBullet (30s), Bullet (1-2 min), Blitz (3-5 min), Rapid (10-60 min), Classical (60+ min).'],['How does rating work?','Win = +10 rating. Loss = -8 rating. Tiers from Bronze (0) to Legend (2600+).'],['Can my account be suspended?','Yes, for cheating, bot usage, or fraudulent activity.'],['Can I sign in with Google?','Yes! Click "Continue with Google" on the login screen.']],es:[['¿Qué es ChessWin7?','Una plataforma de ajedrez basada en habilidad donde los jugadores compiten y ganan recompensas reales en USDT.'],['¿Está basado en la suerte?','No. Los resultados dependen totalmente de la habilidad del jugador.'],['¿Cuál es el valor de las monedas?','1 USDT = 1 MONEDA en nuestra plataforma.'],['¿Ofrece bonos ChessWin7?','¡SÍ! 🏆 Bono de Bienvenida • Bono de Recarga • Bono por Pérdida 🏆'],['¿Cuál es el depósito mínimo?','10 MONEDAS (10 USDT).'],['¿Cómo se calculan las ganancias?','Se deduce una comisión del 5%.'],['¿Cómo retiro?','Ve a la página de Retiro. Admin procesa en 48h.'],['¿Qué controles de tiempo están disponibles?','UltraBala, Bala, Blitz, Rápido, Clásico.'],['¿Cómo funciona el rating?','Ganar = +10. Perder = -8.'],['¿Pueden suspender mi cuenta?','Sí, por trampa o fraude.'],['¿Puedo iniciar sesión con Google?','¡Sí!']],ru:[['Что такое ChessWin7?','Платформа для шахмат на основе навыков с реальными USDT наградами.'],['Основан ли на удаче?','Нет.'],['Какова стоимость монет?','1 USDT = 1 МОНЕТА.'],['Предоставляет ли бонусы?','ДА! 🏆 Приветственный бонус 🏆'],['Мин. депозит?','10 МОНЕТ.'],['Как рассчитываются выигрыши?','Комиссия 5%.'],['Как вывести?','Страница Вывода, 48ч.'],['Контроли времени?','Пуля, Блиц, Рапид, Классика.'],['Рейтинг?','Победа +10, Поражение -8.'],['Блокировка?','За читерство.'],['Google?','Да!']],ur:[['ChessWin7 کیا ہے؟','مہارت پر مبنی شطرنج پلیٹ فارم جہاں USDT انعام ملتے ہیں۔'],['قسمت پر مبنی؟','نہیں۔'],['کوائن کی قیمت؟','1 USDT = 1 کوائن۔'],['بونس؟','ہاں! 🏆'],['کم از کم ڈپازٹ؟','10 USDT۔'],['جیت کا حساب؟','5% فیس۔'],['ود ڈرال؟','48 گھنٹے۔'],['ٹائم کنٹرول؟','بلٹ، بلٹز، ریپڈ۔'],['ریٹنگ؟','جیت +10، ہار -8۔'],['اکاؤنٹ بند؟','دھوکے پر ہاں۔'],['گوگل لاگ ان؟','ہاں!']],zh:[['什么是 ChessWin7？','技能型国际象棋平台，赢取USDT。'],['基于运气吗？','不。'],['金币价值？','1 USDT = 1 金币。'],['提供奖励吗？','是！🏆'],['最低充值？','10 USDT。'],['收益计算？','扣5%手续费。'],['提款？','48小时处理。'],['时间控制？','超快、快棋、闪电战、快速、经典。'],['评级？','胜+10，败-8。'],['账户封禁？','作弊则是。'],['Google登录？','是！']],ja:[['ChessWin7とは？','スキルベースのチェスプラットフォームです。'],['運基づき？','いいえ。'],['コイン価値？','1 USDT = 1 コイン。'],['ボーナス？','はい！🏆'],['最低入金？','10 USDT。'],['収益計算？','5%手数料。'],['出金？','48時間。'],['時間制御？','バレット、ブリッツ、ラピッド。'],['レーティング？','勝+10、敗-8。'],['凍結？','不正行為で。'],['Google？','はい！']],ko:[['ChessWin7이란？','실력 기반 체스 플랫폼입니다。'],['운기반？','아니요。'],['코인 가치？','1 USDT = 1 코인。'],['보너스？','네！🏆'],['최소 입금？','10 USDT。'],['수익 계산？','5% 수수료。'],['출금？','48시간。'],['시간 제어？','블릿, 블리츠, 래피드。'],['레이팅？','승+10, 패-8。'],['계정 정지？','부정행위 시。'],['Google？','네！']],id:[['Apa itu ChessWin7?','Platform catur berbasis keahlian untuk mendapat USDT.'],['Berbasis keberuntungan?','Tidak.'],['Nilai koin?','1 USDT = 1 KOIN.'],['Ada bonus?','YA! 🏆'],['Setoran minimum?','10 USDT.'],['Hitung kemenangan?','Biaya 5%.'],['Cara menarik?','48 jam.'],['Kontrol waktu?','Bullet, Blitz, Rapid.'],['Rating?','Menang +10, Kalah -8.'],['Akun ditangguhkan?','Ya, untuk kecurangan.'],['Google?','Ya!']],ha:[['Mene ne ChessWin7?','Dandamalin chess na kan layi.'],['Ya dogara akan wasa?','Aai.'],['Darajar kudin?','1 USDT = 1 KUDIN.'],['Kyaututtuka?','E! 🏆'],['Mafi ƙarancin ajiya?','10 USDT.'],['Lissafin riba?','Kashi 5%.'],['Cire kudi?','Awanni 48.'],['Lokutan wasa?','Bullet, Blitz, Rapid.'],['Kididdiga?','Nasara +10, Asara -8.'],['Dakatar asusun?','E, saboda magudi.'],['Google?','E!']],de:[['Was ist ChessWin7?','Fertigkeitsbasierte Schachplattform für USDT-Belohnungen.'],['Glücksbasis?','Nein.'],['Münzwert?','1 USDT = 1 Münze.'],['Boni?','JA! 🏆'],['Mindesteinzahlung?','10 USDT.'],['Gewinne?','5% Gebühr.'],['Auszahlung?','48 Stunden.'],['Zeitkontrollen?','Bullet, Blitz, Rapid.'],['Rating?','Sieg +10, Niederlage -8.'],['Konto gesperrt?','Bei Betrug.'],['Google?','Ja!']]};
 function getFAQS(){return FAQS_ALL[activeLang]||FAQS_ALL['en'];}
 function buildFAQ(){
@@ -1926,6 +1790,71 @@ function buildTierTable(){
   t.appendChild(tbody);
 }
 
+// ── HOMEPAGE BANNER CAROUSEL ──
+var _bannerData=[], _bannerIdx=0, _bannerTimer=null;
+
+function loadBannerCarousel(){
+  var ids=['slot1','slot2','slot3'];
+  Promise.all(ids.map(function(id){
+    return db.collection('banners').doc(id).get().catch(function(){return null;});
+  })).then(function(snaps){
+    _bannerData=[];
+    snaps.forEach(function(snap){
+      if(snap&&snap.exists&&snap.data().image){
+        _bannerData.push(snap.data());
+      }
+    });
+    renderBannerCarousel();
+  }).catch(function(){
+    var wrap=document.getElementById('bannerCarousel');
+    if(wrap)wrap.style.display='none';
+  });
+}
+
+function renderBannerCarousel(){
+  var wrap=document.getElementById('bannerCarousel');
+  var skeleton=document.getElementById('bannerSkeleton');
+  var track=document.getElementById('bannerTrack');
+  var dots=document.getElementById('bannerDots');
+  if(!wrap||!track||!dots)return;
+  if(skeleton)skeleton.style.display='none';
+  if(!_bannerData.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  track.innerHTML='';dots.innerHTML='';
+  _bannerData.forEach(function(b,i){
+    var slide=document.createElement('div');
+    slide.className='banner-slide'+(b.link?' clickable':'');
+    var img=document.createElement('img');img.src=b.image;img.alt='Promotion';
+    slide.appendChild(img);
+    if(b.link){slide.onclick=function(){window.open(b.link,'_blank');};}
+    track.appendChild(slide);
+    var dot=document.createElement('div');dot.className='banner-dot'+(i===0?' active':'');
+    dot.onclick=function(){goToBanner(i);};
+    dots.appendChild(dot);
+  });
+  document.querySelectorAll('.banner-arrow').forEach(function(a){a.style.display=_bannerData.length>1?'flex':'none';});
+  _bannerIdx=0;
+  updateBannerPos();
+  startBannerAuto();
+}
+
+function updateBannerPos(){
+  var track=document.getElementById('bannerTrack');if(!track)return;
+  track.style.transform='translateX(-'+(_bannerIdx*100)+'%)';
+  document.querySelectorAll('.banner-dot').forEach(function(d,i){d.classList.toggle('active',i===_bannerIdx);});
+}
+function bannerNav(dir){
+  if(!_bannerData.length)return;
+  _bannerIdx=(_bannerIdx+dir+_bannerData.length)%_bannerData.length;
+  updateBannerPos();startBannerAuto();
+}
+function goToBanner(i){_bannerIdx=i;updateBannerPos();startBannerAuto();}
+function startBannerAuto(){
+  clearInterval(_bannerTimer);
+  if(_bannerData.length<=1)return;
+  _bannerTimer=setInterval(function(){bannerNav(1);},5000);
+}
+
 // ── AUTH ──
 var _pendingSignup=null;
 var GSVG='<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
@@ -1966,7 +1895,6 @@ function doSignup(){
   var _otp=String(Math.floor(100000+Math.random()*900000));
   auth.createUserWithEmailAndPassword(em,pw).then(function(cr){
     _pendingSignup={uid:cr.user.uid,username:un,email:em,password:pw,otp:_otp,otpExpiry:Date.now()+10*60*1000};
-    // FIX 4: New users start with rating=0 (Bronze tier), NOT 1200
     return db.collection('users').doc(cr.user.uid).set({
       username:un,email:em,coins:0,rating:0,wins:0,losses:0,phone:'',
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),
@@ -2038,7 +1966,6 @@ function doGoogle(){
         return db.collection('users').where('email','==',u.email).limit(1).get().then(function(emailSnap){
           if(!emailSnap.empty){toast('Welcome back, '+safeText(emailSnap.docs[0].data().username||'')+'! 👋','ok');return;}
           var uname=(u.displayName||u.email.split('@')[0]).replace(/[<>"'&]/g,'').trim()||'Player';
-          // FIX 4: Google new users also start at rating=0
           return db.collection('users').doc(u.uid).set({
             username:uname,email:u.email,coins:0,rating:0,wins:0,losses:0,
             phone:'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastDaily:null,emailVerified:true
@@ -2079,7 +2006,6 @@ function sendPasswordReset(){
   }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='📧 Send Reset Link';}if(e.code==='auth/user-not-found')toast('No account found with this email','err');else if(e.code==='auth/invalid-email')toast('Please enter a valid email address','err');else toast(e.message,'err');});
 }
 
-// ── FIX 2: Navbar — Exposure ALWAYS shown, even if 0 ──
 function buildNavbarAuth(data){
   var hRight=document.getElementById('headerRight');if(!hRight)return;
   var coins=(data&&data.coins)||0;
@@ -2087,12 +2013,10 @@ function buildNavbarAuth(data){
     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">'+
     '<button class="btn btn-sm" style="background:#00e701;color:#000;font-weight:800" onclick="goPage(\'deposit\')">💰 Deposit</button>'+
     '<button class="btn btn-sm btn-o" style="font-weight:800" onclick="goPage(\'withdrawal\')">💸 Withdraw</button>'+
-    // FIX 2: Balance always visible
     '<div id="navBalance" style="background:rgba(0,231,1,.1);border:1px solid rgba(0,231,1,.3);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;direction:ltr" onclick="goPage(\'profile\')" title="Available Balance">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:600">BAL</span>'+
       '<span>🪙</span><span id="navCoins">'+coins.toLocaleString()+'</span>'+
     '</div>'+
-    // FIX 2: Exposure ALWAYS visible (flex), shows 0 when no exposure
     '<div id="navExposure" style="background:rgba(249,56,72,.08);border:1px solid rgba(249,56,72,.25);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;color:#f93848;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;direction:ltr" onclick="goPage(\'withdrawal\')" title="Exposure (locked funds)">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:600">EXP</span>'+
       '<span>⚡</span><span id="navExp">0</span>'+
@@ -2122,17 +2046,14 @@ function updateNavBalance(coins){
   var pn=document.getElementById('pdropName');if(pn&&window.currentUserData)pn.textContent=safeText(window.currentUserData.username||'');
 }
 
-// FIX 2: Exposure always visible, update value only
 function loadNavExposure(){
   var exp=window._gameExposure||0;
   var ne=document.getElementById('navExp');if(ne)ne.textContent=exp.toLocaleString();
-  // Always keep it visible — don't hide even when 0
 }
 
 function setGameExposure(amount){window._gameExposure=(window._gameExposure||0)+amount;loadNavExposure();}
 function releaseGameExposure(amount){window._gameExposure=Math.max(0,(window._gameExposure||0)-amount);loadNavExposure();}
 
-// Account Statement
 function showAccountStatement(){
   if(!window.currentUser){openAuth('login');return;}
   var overlay=document.getElementById('stmtOverlay');
@@ -2165,7 +2086,7 @@ auth.onAuthStateChanged(function(user){
       var data=snap.exists?snap.data():{username:user.displayName||user.email||'Player',coins:0,rating:0,wins:0,losses:0};
       window.currentUserData=data;
       var sbn=document.getElementById('sb-name');if(sbn)sbn.textContent=safeText(data.username||'—');
-      var t=getTier(data.rating||0); // FIX 4: use 0 not 1200 as default
+      var t=getTier(data.rating||0);
       var sbt=document.getElementById('sb-tier');if(sbt)sbt.textContent=t.i+' '+t.n;
       if(sidebar)sidebar.classList.add('show');if(gNav)gNav.style.display='none';var pb=document.getElementById('promoBtn');if(pb)pb.style.display='none';
       if(hRight){hRight.style.visibility='visible';buildNavbarAuth(data);}
@@ -2187,10 +2108,9 @@ function showSidebarToggle(){var btn=document.getElementById('sbReopenBtn');if(!
 function toggleDrop(){var d=document.getElementById('pDrop');if(d)d.classList.toggle('open');}
 document.addEventListener('click',function(e){if(!e.target.closest('#pBtn')){var d=document.getElementById('pDrop');if(d)d.classList.remove('open');}});
 
-// Profile / stats
 function updateProfilePage(data){
   if(!data)return;
-  var t=getTier(data.rating||0); // FIX 4: default 0 not 1200
+  var t=getTier(data.rating||0);
   var pn=document.getElementById('prof-name');if(pn)pn.textContent=safeText(data.username||'');
   var pu=document.getElementById('prof-un');if(pu)pu.value=safeText(data.username||'');
   var em=document.getElementById('prof-email');if(em)em.textContent=window.currentUser?safeText(window.currentUser.email):'';
@@ -2228,7 +2148,6 @@ function changePassword(){
   .catch(function(e){if(e.code==='auth/requires-recent-login')toast('Please log out and log back in, then try again','err');else toast(e.message,'err');});
 }
 
-// ── FIX 3: Withdrawal deducts coins immediately on submit ──
 var _actionLog={};
 function rateLimit(action,maxPerMin){
   var now=Date.now();if(!_actionLog[action])_actionLog[action]=[];
@@ -2254,7 +2173,6 @@ function submitDeposit(){
   }).catch(function(e){toast(e.message,'err');});
 }
 
-// FIX 3: Deduct coins immediately when withdrawal submitted
 function submitWithdrawal(){
   if(!window.currentUser){openAuth('login');return;}
   if(!rateLimit('withdrawal',3)){return;}
@@ -2263,15 +2181,12 @@ function submitWithdrawal(){
   if(isEmailUser&&!window.currentUser.emailVerified){toast('Please verify your email before withdrawing','err');return;}
   var amt=parseFloat(document.getElementById('wdAmt').value);
   var wallet=document.getElementById('wdWallet').value.trim();
-  // Re-read balance from Firestore to prevent client bypass
   db.collection('users').doc(window.currentUser.uid).get().then(function(snap){
     if(!snap.exists){toast('Account not found','err');return;}
     var bal=snap.data().coins||0;
     if(!amt||amt<10){toast('Minimum 10 USDT','err');return;}
     if(!wallet){toast('Enter wallet address','err');return;}
     if(bal<amt){toast('Insufficient balance! You have '+bal+' COINS','err');return;}
-    // Coins stay in user account until admin approves
-    // On approve: admin panel deducts. On reject: nothing needed (coins safe).
     return db.collection('withdrawals').add({
       userId:window.currentUser.uid,
       username:safeText(window.currentUserData?window.currentUserData.username:''),
@@ -2354,7 +2269,6 @@ function loadWithdrawalHistory(){
   });
 }
 
-// Navigation
 function goPage(id,el){
   var so=document.getElementById('stmtOverlay');if(so)so.style.display='none';
   if((id==='play'||id==='deposit'||id==='withdrawal')&&!window.currentUser){openAuth('login');toast('Please login first','err');return;}
@@ -2374,36 +2288,28 @@ function scrollToId(id){
   setTimeout(function(){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});},100);
 }
 
-// Toast
 function toast(msg,type){var t=document.getElementById('toast');t.className='toast '+(type==='ok'?'ok':type==='err'?'err':'info');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3500);}
 
-// Tournament
 function toggleTournDrop(e,el){e.stopPropagation();var drop=document.getElementById('sbTournDrop');if(!drop)return;var isOpen=drop.style.display==='block';drop.style.display=isOpen?'none':'block';el.classList.toggle('active',!isOpen);}
 function goTourney(type){
   if(!window.currentUser){openAuth('login');toast('Please login first','err');return;}
   if(type==='1v1'){
-    // 1v1 goes to play page
     goPage('play');
     return;
   }
-  // All other tournament types → tournament page, highlight the type
   goPage('tournament');
-  // Set active tournament type in the page
   var typeNames={
     swiss:'Swiss Tournament',knockout:'Knockout (Elimination)',double:'Double Elimination',
     rapid:'Rapid Tournament',blitz:'Blitz Tournament',bullet:'Bullet Tournament',ultra:'Ultra Bullet',
     spring:'Spring Open',summer:'Summer Open',autumn:'Autumn Open',winter:'Winter Open'
   };
-  // Update tournament page heading to show which tournament was clicked
   var activeName=typeNames[type]||type;
   var heading=document.getElementById('tournTitle');
   if(heading)heading.textContent=activeName;
-  // Highlight matching card or show info
   var subTag=document.querySelector('#page-tournament .section-tag');
   if(subTag)subTag.textContent=activeName;
 }
 
-// Mobile drawer
 function toggleMobDrawer(){var drawer=document.getElementById('mobDrawer'),overlay=document.getElementById('mobOverlay'),ham=document.getElementById('hamburger');if(!drawer)return;var isOpen=drawer.classList.contains('open');drawer.classList.toggle('open',!isOpen);overlay.classList.toggle('open',!isOpen);ham.classList.toggle('open',!isOpen);}
 function closeMobDrawer(){var drawer=document.getElementById('mobDrawer'),overlay=document.getElementById('mobOverlay'),ham=document.getElementById('hamburger');if(drawer)drawer.classList.remove('open');if(overlay)overlay.classList.remove('open');if(ham)ham.classList.remove('open');}
 function toggleMobTourn(e){e.stopPropagation();var drop=document.getElementById('mobTournDrop');if(drop)drop.style.display=drop.style.display==='block'?'none':'block';}
@@ -2418,16 +2324,12 @@ function updateMobDrawer(user,data){
   }else{if(gLinks)gLinks.style.display='block';if(aLinks)aLinks.style.display='none';if(mobUser)mobUser.style.display='none';}
 }
 
-// Support — opens Crisp live chat
 function openSupport(){if(window.$crisp){window.$crisp.push(['do','chat:open']);}}
 
-// Reveal on scroll
 var ro=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.1});
 document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
 
-
-// ── FIX 5: Full Translation System ──
-// All languages including English — setLang('en') re-applies EN translations (fixes B issue)
+// ── Translation System ──
 var activeLang='en';
 
 var LANGS=[
@@ -2443,8 +2345,6 @@ var LANGS=[
   {code:'de',flag:'🇩🇪',name:'Deutsch'}
 ];
 
-// FIX 5A+B+C: Complete translation map — every visible string, including EN
-// setLang('en') runs through the same code path as any other language — no special casing
 var T={
   en:{
     dir:'ltr',
@@ -2467,19 +2367,16 @@ var T={
     supportDesc:'Have a question about deposits, withdrawals, or your account? Our support team is available 24/7.',
     supportBtn:'💬 Start Live Chat',
     footerTerms:'Terms & Conditions',footerFaq:'FAQ',footerAbout:'About Us',
-    // Sidebar
     sbMain:'Main',sbFinance:'Finance',sbAccount:'Account',sbSupport:'Support',sbLang:'🌐 Language',
     sbHome:'Home',sb1v1:'1 vs 1',sbTournaments:'Tournaments',sbPromotions:'Promotions',
     sbDeposit:'Deposit',sbWithdraw:'Withdraw',sbStats:'Stats',sbProfile:'Profile',sbTheme:'Board Theme',
     sbLiveSupport:'💬 Live Support',sbOnlineNow:'● Online Now',
-    // Play page
     playTag:'Live Arena',playTitle:'Play Chess Online',
     gameModeTitle:'Game Mode',modeTab1:'vs AI 🤖',modeTab2:'vs Friend',modeTab3:'Matchmaking',
     playAsLabel:'Play As',timeCtrlLabel:'Time Control',roomCodeLabel:'Room Code',
     matchTimeLabel:'Time Control',createRoomBtn:'Create Room',joinRoomBtn:'Join Room',
     startAiBtn:'Start vs AI',matchBtn:'Find Opponent',
     moveHistoryTitle:'Move History',playBtnNew:'New',playBtnUndo:'Undo',playBtnDraw:'½ Draw',playBtnResign:'Resign',
-    // Finance
     depTag:'Finance',depTitle:'💰 Deposit',depFormTitle:'Submit Deposit Request',
     depAmtLabel:'Amount (USDT)',depTxLabel:'Transaction ID / TxHash',depNoteLabel:'Note (Optional)',
     depSubmitBtn:'📤 Submit Request',depHistTitle:'My Deposit History',depEmptyText:'No deposits yet',
@@ -2488,7 +2385,6 @@ var T={
     wdBalLabel:'Available Balance',wdAmtLabel:'Amount (USDT)',wdWalletLabel:'Wallet Address (TRC20/ERC20)',
     wdSubmitBtn:'📤 Submit Request',wdHistTitle:'My Withdrawal History',wdEmptyText:'No withdrawals yet',
     wd_ph_amount:'Min. 10 USDT',wd_ph_wallet:'Your USDT wallet address',
-    // Stats/Profile
     statsTag:'Your Performance',statsTitle:'Statistics',statsTierTitle:'Rating Tiers',
     statsLblRating:'Rating',statsLblWins:'Wins',statsLblLosses:'Losses',statsLblWr:'Win Rate',
     profTag:'Account',profTitle:'My Profile',profSettingsTitle:'Account Settings',
@@ -2497,13 +2393,12 @@ var T={
     profSaveBtn:'Save Changes',profPwBtn:'Update Password',
     profLblRating:'Rating',profLblWins:'Wins',profLblCoins:'Coins',
     logoutBtn:'🚪 Logout',
-    // Theme/Tournament
     themeTag:'Settings',themeTitle:'🎨 Board Theme',themeDesc:'Choose your chess board colour',
     tournTag:'Competitive',tournTitle:'Tournaments',
     tournSwiss:'🔄 Swiss Tournament',tournKnockout:'🥊 Knockout (Elimination)',tournDouble:'🏅 Double Elimination',
     tournRapid:'⏱ Rapid Tournament',tournBlitz:'⚡ Blitz Tournament',tournBullet:'🔫 Bullet Tournament',tournUltra:'💨 Ultra Bullet',
     tournArenaLabel:'Arena',tournSeasonalLabel:'Seasonal',
-    tournSpring:'🌸 Spring Open',tournSummer:'☀️ Summer Open',tournAutumn:'🍂 Autumn Open',tournWinter:'❄️ Winter Open',
+    tournSpring:'🌸 Spring Open',tournSummer:'☀️ Summer Open',tournAutumn:'🍂 Autumn Open',tournWinter:'❄️ Winter Open'
   },
   ur:{
     dir:'rtl',
@@ -2557,7 +2452,7 @@ var T={
     tournSwiss:'🔄 سوئس ٹورنامنٹ',tournKnockout:'🥊 ناک آؤٹ',tournDouble:'🏅 ڈبل ایلیمینیشن',
     tournRapid:'⏱ ریپڈ ٹورنامنٹ',tournBlitz:'⚡ بلٹز ٹورنامنٹ',tournBullet:'🔫 بلٹ ٹورنامنٹ',tournUltra:'💨 الٹرا بلٹ',
     tournArenaLabel:'اکھاڑہ',tournSeasonalLabel:'موسمی',
-    tournSpring:'🌸 سپرنگ اوپن',tournSummer:'☀️ سمر اوپن',tournAutumn:'🍂 آٹم اوپن',tournWinter:'❄️ ونٹر اوپن',
+    tournSpring:'🌸 سپرنگ اوپن',tournSummer:'☀️ سمر اوپن',tournAutumn:'🍂 آٹم اوپن',tournWinter:'❄️ ونٹر اوپن'
   },
   es:{
     dir:'ltr',
@@ -2611,7 +2506,7 @@ var T={
     tournSwiss:'🔄 Torneo Suizo',tournKnockout:'🥊 Eliminatoria',tournDouble:'🏅 Doble Eliminación',
     tournRapid:'⏱ Torneo Rápido',tournBlitz:'⚡ Torneo Blitz',tournBullet:'🔫 Torneo Bala',tournUltra:'💨 Ultra Bala',
     tournArenaLabel:'Arena',tournSeasonalLabel:'Temporada',
-    tournSpring:'🌸 Abierto Primavera',tournSummer:'☀️ Abierto Verano',tournAutumn:'🍂 Abierto Otoño',tournWinter:'❄️ Abierto Invierno',
+    tournSpring:'🌸 Abierto Primavera',tournSummer:'☀️ Abierto Verano',tournAutumn:'🍂 Abierto Otoño',tournWinter:'❄️ Abierto Invierno'
   },
   ru:{
     dir:'ltr',
@@ -2665,7 +2560,7 @@ var T={
     tournSwiss:'🔄 Швейцарский',tournKnockout:'🥊 На выбывание',tournDouble:'🏅 Двойное выбывание',
     tournRapid:'⏱ Рапид',tournBlitz:'⚡ Блиц',tournBullet:'🔫 Пуля',tournUltra:'💨 Ультрапуля',
     tournArenaLabel:'Арена',tournSeasonalLabel:'Сезонные',
-    tournSpring:'🌸 Весенний Open',tournSummer:'☀️ Летний Open',tournAutumn:'🍂 Осенний Open',tournWinter:'❄️ Зимний Open',
+    tournSpring:'🌸 Весенний Open',tournSummer:'☀️ Летний Open',tournAutumn:'🍂 Осенний Open',tournWinter:'❄️ Зимний Open'
   },
   zh:{dir:'ltr',heroTag:'♛ ChessWin7 — 技能竞技场',heroH1:'下国际象棋。<br><span style="color:var(--accent)">赢取</span><br>真实奖励。',heroSubtitle:'挑战全球真实玩家，攀登排行榜，赢取USDT。1金币=1USDT。',heroBtn1:'▶ 立即游戏',heroBtn2:'查看排名',statLabel1:'活跃玩家',statLabel2:'已发放金币',statLabel3:'已举办赛事',miniTag:'直播游戏',miniTitle:'活跃竞技场',miniDesc:'观看各级别进行中的直播对局',miniGold:'♛ 黄金',miniSilver:'♜ 白银',miniBronze:'♟ 铜牌',arenaTag:'现已直播',arenaTitle:'竞技场',arenaBadge1:'初级',arenaBadge2:'中级',arenaBadge3:'精英',arenaEntryFee:'报名费',arenaPrize:'奖池',arenaTimeCtrl:'时间控制',arenaBtn:'参加比赛',lbTag:'全球排名',lbTitle:'排行榜',lbCol1:'排名',lbCol2:'玩家',lbCol3:'等级',lbCol4:'积分',lbCol5:'胜场',lbCol6:'金币',faqTag:'帮助',faqTitle:'常见问题',langTag:'选择语言',langTitle:'🌐 选择语言',supportTag:'支持',supportTitle:'💬 在线支持',supportChatTitle:'联系我们',supportOnline:'在线·几分钟内回复',supportDesc:'关于充值、提现或账户有疑问？团队24/7为您服务。',supportBtn:'💬 开始聊天',footerTerms:'条款',footerFaq:'常见问题',footerAbout:'关于我们',sbMain:'主要',sbFinance:'财务',sbAccount:'账户',sbSupport:'支持',sbLang:'🌐 语言',sbHome:'首页',sb1v1:'1对1',sbTournaments:'比赛',sbPromotions:'促销',sbDeposit:'充值',sbWithdraw:'提现',sbStats:'统计',sbProfile:'个人资料',sbTheme:'棋盘主题',sbLiveSupport:'💬 在线支持',sbOnlineNow:'● 在线',playTag:'直播竞技场',playTitle:'在线下棋',gameModeTitle:'游戏模式',modeTab1:'对AI 🤖',modeTab2:'对朋友',modeTab3:'匹配',playAsLabel:'执棋',timeCtrlLabel:'时间控制',roomCodeLabel:'房间码',matchTimeLabel:'时间控制',createRoomBtn:'创建房间',joinRoomBtn:'加入房间',startAiBtn:'对战AI',matchBtn:'寻找对手',moveHistoryTitle:'走棋记录',playBtnNew:'新局',playBtnUndo:'悔棋',playBtnDraw:'½ 和棋',playBtnResign:'认负',depTag:'财务',depTitle:'💰 充值',depFormTitle:'提交充值申请',depAmtLabel:'金额(USDT)',depTxLabel:'交易ID',depNoteLabel:'备注',depSubmitBtn:'📤 提交',depHistTitle:'我的充值记录',depEmptyText:'暂无充值记录',dep_ph_amount:'最低10 USDT',dep_ph_tx:'粘贴您的TxID',dep_ph_note:'如 TRC20',wdTag:'财务',wdTitle:'💸 提现',wdFormTitle:'提交提现申请',wdBalLabel:'可用余额',wdAmtLabel:'金额(USDT)',wdWalletLabel:'钱包地址',wdSubmitBtn:'📤 提交',wdHistTitle:'我的提现记录',wdEmptyText:'暂无提现记录',wd_ph_amount:'最低10 USDT',wd_ph_wallet:'您的USDT钱包地址',statsTag:'您的表现',statsTitle:'统计数据',statsTierTitle:'评级等级',statsLblRating:'积分',statsLblWins:'胜场',statsLblLosses:'败场',statsLblWr:'胜率',profTag:'账户',profTitle:'我的资料',profSettingsTitle:'账户设置',profUnLabel:'用户名',profEmLabel:'邮箱',profPhoneLabel:'手机',profPwTitle:'修改密码',profNewPwLabel:'新密码',profConfPwLabel:'确认密码',profSaveBtn:'保存',profPwBtn:'更新密码',profLblRating:'积分',profLblWins:'胜场',profLblCoins:'金币',logoutBtn:'🚪 退出',themeTag:'设置',themeTitle:'🎨 棋盘主题',themeDesc:'选择棋盘颜色',tournTag:'竞技',tournTitle:'比赛',tournSwiss:'🔄 瑞士制',tournKnockout:'🥊 淘汰赛',tournDouble:'🏅 双败淘汰',tournRapid:'⏱ 快速赛',tournBlitz:'⚡ 闪电战',tournBullet:'🔫 子弹棋',tournUltra:'💨 超快棋',tournArenaLabel:'竞技场',tournSeasonalLabel:'季节赛',tournSpring:'🌸 春季',tournSummer:'☀️ 夏季',tournAutumn:'🍂 秋季',tournWinter:'❄️ 冬季'},
   ja:{dir:'ltr',heroTag:'♛ ChessWin7 — スキル競技場',heroH1:'チェスをプレイ。<br><span style="color:var(--accent)">リアル</span><br>報酬を稼ごう。',heroSubtitle:'世界中のプレイヤーに挑戦し、ランキングを駆け上がり、勝利するたびにUSDTを獲得。1コイン=1USDT。',heroBtn1:'▶ 今すぐプレイ',heroBtn2:'ランキングを見る',statLabel1:'アクティブプレイヤー',statLabel2:'配布コイン',statLabel3:'大会数',miniTag:'ライブゲーム',miniTitle:'アクティブアリーナ',miniDesc:'全スキルレベルの試合をリアルタイムで観戦',miniGold:'♛ ゴールド',miniSilver:'♜ シルバー',miniBronze:'♟ ブロンズ',arenaTag:'今すぐライブ',arenaTitle:'アリーナ',arenaBadge1:'初心者',arenaBadge2:'中級',arenaBadge3:'エリート',arenaEntryFee:'参加費',arenaPrize:'賞金プール',arenaTimeCtrl:'タイムコントロール',arenaBtn:'大会に参加',lbTag:'グローバルランキング',lbTitle:'リーダーボード',lbCol1:'順位',lbCol2:'プレイヤー',lbCol3:'ティア',lbCol4:'レーティング',lbCol5:'勝利',lbCol6:'コイン',faqTag:'ヘルプ',faqTitle:'よくある質問',langTag:'言語選択',langTitle:'🌐 言語を選択',supportTag:'サポート',supportTitle:'💬 ライブサポート',supportChatTitle:'チャットする',supportOnline:'オンライン・すぐに返信',supportDesc:'入金・出金・アカウントについてご質問は？24時間対応。',supportBtn:'💬 チャットを始める',footerTerms:'利用規約',footerFaq:'FAQ',footerAbout:'会社概要',sbMain:'メイン',sbFinance:'財務',sbAccount:'アカウント',sbSupport:'サポート',sbLang:'🌐 言語',sbHome:'ホーム',sb1v1:'1対1',sbTournaments:'大会',sbPromotions:'プロモ',sbDeposit:'入金',sbWithdraw:'出金',sbStats:'統計',sbProfile:'プロフィール',sbTheme:'ボードテーマ',sbLiveSupport:'💬 ライブサポート',sbOnlineNow:'● オンライン',playTag:'ライブアリーナ',playTitle:'オンラインチェス',gameModeTitle:'ゲームモード',modeTab1:'AI対戦 🤖',modeTab2:'友達対戦',modeTab3:'マッチメイキング',playAsLabel:'プレイカラー',timeCtrlLabel:'タイムコントロール',roomCodeLabel:'ルームコード',matchTimeLabel:'タイムコントロール',createRoomBtn:'部屋を作る',joinRoomBtn:'入室',startAiBtn:'AI対戦開始',matchBtn:'対戦相手を探す',moveHistoryTitle:'手順',playBtnNew:'新規',playBtnUndo:'戻す',playBtnDraw:'½ 引き分け',playBtnResign:'投了',depTag:'財務',depTitle:'💰 入金',depFormTitle:'入金申請',depAmtLabel:'金額(USDT)',depTxLabel:'取引ID',depNoteLabel:'メモ',depSubmitBtn:'📤 送信',depHistTitle:'入金履歴',depEmptyText:'入金なし',dep_ph_amount:'最低10 USDT',dep_ph_tx:'TxIDを貼り付け',dep_ph_note:'例: TRC20',wdTag:'財務',wdTitle:'💸 出金',wdFormTitle:'出金申請',wdBalLabel:'利用可能残高',wdAmtLabel:'金額(USDT)',wdWalletLabel:'ウォレットアドレス',wdSubmitBtn:'📤 送信',wdHistTitle:'出金履歴',wdEmptyText:'出金なし',wd_ph_amount:'最低10 USDT',wd_ph_wallet:'USDTウォレットアドレス',statsTag:'成績',statsTitle:'統計',statsTierTitle:'レーティング階層',statsLblRating:'レーティング',statsLblWins:'勝利',statsLblLosses:'敗北',statsLblWr:'勝率',profTag:'アカウント',profTitle:'プロフィール',profSettingsTitle:'設定',profUnLabel:'ユーザー名',profEmLabel:'メール',profPhoneLabel:'電話番号',profPwTitle:'パスワード変更',profNewPwLabel:'新パスワード',profConfPwLabel:'確認',profSaveBtn:'保存',profPwBtn:'更新',profLblRating:'レーティング',profLblWins:'勝利',profLblCoins:'コイン',logoutBtn:'🚪 ログアウト',themeTag:'設定',themeTitle:'🎨 テーマ',themeDesc:'盤の色を選択',tournTag:'競技',tournTitle:'大会',tournSwiss:'🔄 スイス式',tournKnockout:'🥊 ノックアウト',tournDouble:'🏅 ダブルエリミ',tournRapid:'⏱ ラピッド',tournBlitz:'⚡ ブリッツ',tournBullet:'🔫 バレット',tournUltra:'💨 ウルトラ',tournArenaLabel:'アリーナ',tournSeasonalLabel:'シーズン',tournSpring:'🌸 春',tournSummer:'☀️ 夏',tournAutumn:'🍂 秋',tournWinter:'❄️ 冬'},
@@ -2675,35 +2570,26 @@ var T={
   de:{dir:'ltr',heroTag:'♛ ChessWin7 — Skill-Arena',heroH1:'Schach Spielen.<br><span style="color:var(--accent)">Echte</span><br>Belohnungen Verdienen.',heroSubtitle:'Fordere echte Spieler weltweit heraus, erklimme die Rangliste und gewinne USDT. 1 MÜNZE = 1 USDT.',heroBtn1:'▶ Jetzt Spielen',heroBtn2:'Rangliste',statLabel1:'Aktive Spieler',statLabel2:'Münzen Vergeben',statLabel3:'Turniere',miniTag:'Live-Spiele',miniTitle:'Aktive Arenen',miniDesc:'Verfolge Live-Positionen laufender Partien',miniGold:'♛ Gold',miniSilver:'♜ Silber',miniBronze:'♟ Bronze',arenaTag:'Jetzt Live',arenaTitle:'Die Arena',arenaBadge1:'Anfänger',arenaBadge2:'Fortgeschritten',arenaBadge3:'Elite',arenaEntryFee:'Startgebühr',arenaPrize:'Preispool',arenaTimeCtrl:'Zeitkontrolle',arenaBtn:'Turnier betreten',lbTag:'Weltrangliste',lbTitle:'Rangliste',lbCol1:'Rang',lbCol2:'Spieler',lbCol3:'Stufe',lbCol4:'Wertung',lbCol5:'Siege',lbCol6:'Münzen',faqTag:'Hilfe',faqTitle:'Häufige Fragen',langTag:'Sprache wählen',langTitle:'🌐 Sprache auswählen',supportTag:'Support',supportTitle:'💬 Live-Support',supportChatTitle:'Schreib uns',supportOnline:'Online · Antwortet in Minuten',supportDesc:'Fragen zu Einzahlungen, Auszahlungen oder deinem Konto? Unser Team ist 24/7 erreichbar.',supportBtn:'💬 Chat starten',footerTerms:'AGB',footerFaq:'FAQ',footerAbout:'Über uns',sbMain:'Hauptmenü',sbFinance:'Finanzen',sbAccount:'Konto',sbSupport:'Support',sbLang:'🌐 Sprache',sbHome:'Startseite',sb1v1:'1 vs 1',sbTournaments:'Turniere',sbPromotions:'Aktionen',sbDeposit:'Einzahlen',sbWithdraw:'Auszahlen',sbStats:'Statistiken',sbProfile:'Profil',sbTheme:'Brettthema',sbLiveSupport:'💬 Live-Support',sbOnlineNow:'● Online',playTag:'Live Arena',playTitle:'Online Schach spielen',gameModeTitle:'Spielmodus',modeTab1:'vs KI 🤖',modeTab2:'vs Freund',modeTab3:'Matchmaking',playAsLabel:'Spielen als',timeCtrlLabel:'Zeitkontrolle',roomCodeLabel:'Raumcode',matchTimeLabel:'Zeitkontrolle',createRoomBtn:'Raum erstellen',joinRoomBtn:'Beitreten',startAiBtn:'vs KI starten',matchBtn:'Gegner suchen',moveHistoryTitle:'Zugverlauf',playBtnNew:'Neu',playBtnUndo:'Rückgängig',playBtnDraw:'½ Remis',playBtnResign:'Aufgeben',depTag:'Finanzen',depTitle:'💰 Einzahlung',depFormTitle:'Einzahlungsantrag',depAmtLabel:'Betrag (USDT)',depTxLabel:'Transaktions-ID',depNoteLabel:'Notiz',depSubmitBtn:'📤 Senden',depHistTitle:'Meine Einzahlungen',depEmptyText:'Noch keine Einzahlungen',dep_ph_amount:'Min. 10 USDT',dep_ph_tx:'TxID einfügen',dep_ph_note:'z.B. TRC20',wdTag:'Finanzen',wdTitle:'💸 Auszahlung',wdFormTitle:'Auszahlungsantrag',wdBalLabel:'Verfügbares Guthaben',wdAmtLabel:'Betrag (USDT)',wdWalletLabel:'Wallet-Adresse',wdSubmitBtn:'📤 Senden',wdHistTitle:'Meine Auszahlungen',wdEmptyText:'Noch keine Auszahlungen',wd_ph_amount:'Min. 10 USDT',wd_ph_wallet:'Ihre USDT-Wallet-Adresse',statsTag:'Ihre Leistung',statsTitle:'Statistiken',statsTierTitle:'Bewertungsstufen',statsLblRating:'Wertung',statsLblWins:'Siege',statsLblLosses:'Niederlagen',statsLblWr:'Siegquote',profTag:'Konto',profTitle:'Mein Profil',profSettingsTitle:'Einstellungen',profUnLabel:'Benutzername',profEmLabel:'E-Mail',profPhoneLabel:'Telefon',profPwTitle:'Passwort ändern',profNewPwLabel:'Neues Passwort',profConfPwLabel:'Bestätigung',profSaveBtn:'Speichern',profPwBtn:'Aktualisieren',profLblRating:'Wertung',profLblWins:'Siege',profLblCoins:'Münzen',logoutBtn:'🚪 Abmelden',themeTag:'Einstellungen',themeTitle:'🎨 Brettthema',themeDesc:'Wähle deine Brettfarbe',tournTag:'Wettbewerb',tournTitle:'Turniere',tournSwiss:'🔄 Schweizer System',tournKnockout:'🥊 K.O.-Runde',tournDouble:'🏅 Doppeltes Ausscheiden',tournRapid:'⏱ Rapid',tournBlitz:'⚡ Blitz',tournBullet:'🔫 Bullet',tournUltra:'💨 Ultra Bullet',tournArenaLabel:'Arena',tournSeasonalLabel:'Saisonal',tournSpring:'🌸 Frühlings Open',tournSummer:'☀️ Sommer Open',tournAutumn:'🍂 Herbst Open',tournWinter:'❄️ Winter Open'}
 };
 
-// FIX 5 A+B+C: setLang applies ALL translations, including English
-// — same code path for every language — no special casing for EN
 function setLang(code){
   activeLang=code;
   try{localStorage.setItem('cw7lang',code);}catch(e){}
   var tr=T[code]||T['en'];
 
-  // Document direction
   document.documentElement.lang=code;
   document.body.dir=tr.dir||'ltr';
-  // Force LTR on elements that must never flip
   var ltrEls=['navBalance','navExposure','wdBal','prof-rating','prof-wins','prof-coins'];
   ltrEls.forEach(function(id){var el=document.getElementById(id);if(el)el.style.direction='ltr';});
   document.querySelectorAll('.pstat-val,.profile-stats,.tier-badge').forEach(function(el){el.style.direction='ltr';});
-  // Force LTR on ALL major layout sections so RTL only affects text alignment
   ['hero','stats-bar','ticker','lb-wrap','cards-grid','mini-boards-section',
    'play-layout','finance-form','balance-box'].forEach(function(cls){
     document.querySelectorAll('.'+cls).forEach(function(el){el.style.direction='ltr';});
   });
-  // Also force LTR on the main content area
   var mainEl=document.querySelector('main');
   if(mainEl){mainEl.style.direction='ltr';}
-  // Header must ALWAYS be LTR so navbar items never reverse
   var headerEl=document.querySelector('header');
   if(headerEl){headerEl.style.direction='ltr';}
-  // Profile dropdown always LTR and right-aligned to button
   var pDropEl=document.getElementById('pDrop');
   if(pDropEl){pDropEl.style.direction='ltr';pDropEl.style.right='0';pDropEl.style.left='auto';}
-  // But allow text to be RTL inside those containers for RTL languages
   if(tr.dir==='rtl'){
     document.querySelectorAll('.hero h1,.hero p,.hero-btns,.section h2,.section-tag,'+
       '.faq-q,.faq-a,.card h3,.card-row,.panel h3,.finance-form h3,.form-row label,'+
@@ -2718,7 +2604,6 @@ function setLang(code){
     });
   }
 
-  // FIX 5A: Hero section — all IDs targeted directly
   function setInner(id,html){var el=document.getElementById(id);if(el&&html!==undefined)el.innerHTML=html;}
   function setText(id,txt){var el=document.getElementById(id);if(el&&txt!==undefined)el.textContent=txt;}
 
@@ -2727,35 +2612,27 @@ function setLang(code){
   setText('heroSubtitle',tr.heroSubtitle);
   setText('heroBtn1',tr.heroBtn1);setText('heroBtn2',tr.heroBtn2);
 
-  // Stats bar
   setText('statLabel1',tr.statLabel1);setText('statLabel2',tr.statLabel2);setText('statLabel3',tr.statLabel3);
 
-  // Mini boards
   setInner('miniTag',tr.miniTag);setText('miniTitle',tr.miniTitle);setText('miniDesc',tr.miniDesc);
   setInner('miniGold',tr.miniGold);setInner('miniSilver',tr.miniSilver);setInner('miniBronze',tr.miniBronze);
 
-  // FIX 5A: Arena section — explicit IDs
   setInner('arenaTag',tr.arenaTag);
   setText('arenaTitle',tr.arenaTitle);
   setText('arenaBadge1',tr.arenaBadge1);setText('arenaBadge2',tr.arenaBadge2);setText('arenaBadge3',tr.arenaBadge3);
-  // Arena card labels and buttons
   document.querySelectorAll('.arena-btn').forEach(function(btn){btn.textContent=tr.arenaBtn;});
   document.querySelectorAll('[data-lbl="entry"]').forEach(function(el){el.textContent=tr.arenaEntryFee;});
   document.querySelectorAll('[data-lbl="prize"]').forEach(function(el){el.textContent=tr.arenaPrize;});
   document.querySelectorAll('[data-lbl="time"]').forEach(function(el){el.textContent=tr.arenaTimeCtrl;});
 
-  // Leaderboard
   setText('lbTag',tr.lbTag);setText('lbTitle',tr.lbTitle);
   setText('lbCol1',tr.lbCol1);setText('lbCol2',tr.lbCol2);setText('lbCol3',tr.lbCol3);
   setText('lbCol4',tr.lbCol4);setText('lbCol5',tr.lbCol5);setText('lbCol6',tr.lbCol6);
 
-  // FAQ
   setText('faqTag',tr.faqTag);setText('faqTitle',tr.faqTitle);
-  buildFAQ(); // rebuild with new language
-  // FIX 1: Rebuild ticker after lang change so it doesn't go blank
+  buildFAQ();
   buildTicker(window._lastLBPlayers||FAKE_LB);
 
-  // Language/Support section
   setText('langTag',tr.langTag);setText('langTitle',tr.langTitle);
   setText('supportTag',tr.supportTag);setText('supportTitle',tr.supportTitle);
   setText('supportChatTitle',tr.supportChatTitle);
@@ -2763,17 +2640,14 @@ function setLang(code){
   setText('supportDesc',tr.supportDesc);
   setText('supportBtn',tr.supportBtn);
 
-  // Footer
   setText('footerTerms',tr.footerTerms);setText('footerFaq',tr.footerFaq);setText('footerAbout',tr.footerAbout);
 
-  // Sidebar sections (data-sec attributes)
   document.querySelectorAll('[data-sec="main"]').forEach(function(el){el.textContent=tr.sbMain;});
   document.querySelectorAll('[data-sec="finance"]').forEach(function(el){el.textContent=tr.sbFinance;});
   document.querySelectorAll('[data-sec="account"]').forEach(function(el){el.textContent=tr.sbAccount;});
   document.querySelectorAll('[data-sec="support"]').forEach(function(el){el.textContent=tr.sbSupport;});
   document.querySelectorAll('[data-sec="more_lang"]').forEach(function(el){el.textContent=tr.sbLang;});
 
-  // FIX 3: Sidebar link text translation
   var sbLinkMap={'sb_home':tr.sbHome,'tourn_1v1':tr.sb1v1,'sb_promotions':tr.sbPromotions,
     'sb_deposit':tr.sbDeposit,'sb_withdraw':tr.sbWithdraw,
     'sb_stats':tr.sbStats,'sb_profile':tr.sbProfile,'sb_theme':tr.sbTheme};
@@ -2787,17 +2661,14 @@ function setLang(code){
       }
     }
   });
-  // Tournaments link text
   var sbTournEl=document.getElementById('sbTourn');
   if(sbTournEl){var nodes=sbTournEl.childNodes;for(var ni=0;ni<nodes.length;ni++){if(nodes[ni].nodeType===3&&nodes[ni].textContent.trim()){nodes[ni].textContent=tr.sbTournaments||'Tournaments';break;}}}
-  // Sidebar support button
   document.querySelectorAll('.sb-support-btn').forEach(function(btn){
     var ds=btn.querySelectorAll('div > div');
     if(ds[0])ds[0].textContent=tr.sbLiveSupport||'Live Support';
     if(ds[1])ds[1].textContent=tr.sbOnlineNow||'Online Now';
   });
 
-  // FIX 3: Profile dropdown items
   var pDrop=document.getElementById('pDrop');
   if(pDrop){
     var items=pDrop.querySelectorAll('.drop-item');
@@ -2806,7 +2677,6 @@ function setLang(code){
     items.forEach(function(item,i){if(dl[i])item.textContent=dlIcons[i]+' '+dl[i];});
   }
 
-  // FIX 3: Navbar buttons translation
   var hRight=document.getElementById('headerRight');
   if(hRight&&window.currentUser){
     var depBtn=hRight.querySelector('button:first-child');
@@ -2815,7 +2685,6 @@ function setLang(code){
     if(wdBtn)wdBtn.textContent='💸 '+(tr.sbWithdraw||'Withdraw');
   }
 
-  // FIX 3: Mobile drawer
   var mobAuth=document.getElementById('mobAuthLinks');
   if(mobAuth){
     mobAuth.querySelectorAll('[data-link]').forEach(function(el){
@@ -2838,7 +2707,6 @@ function setLang(code){
     });
   }
 
-  // FIX 3: Guest nav
   var gNav=document.getElementById('guestNav');
   if(gNav&&!window.currentUser){
     var gBtns=gNav.querySelectorAll('a');
@@ -2847,7 +2715,6 @@ function setLang(code){
     if(gBtns[2])gBtns[2].textContent=tr.arenaTag||'Arena';
   }
 
-  // Play page
   setText('playTag',tr.playTag);setText('playTitle',tr.playTitle);
   setText('gameModeTitle',tr.gameModeTitle);
   setText('modeTab1',tr.modeTab1);setText('modeTab2',tr.modeTab2);setText('modeTab3',tr.modeTab3);
@@ -2859,24 +2726,20 @@ function setLang(code){
   setText('playBtnNew',tr.playBtnNew);setText('playBtnUndo',tr.playBtnUndo);
   setText('playBtnDraw',tr.playBtnDraw);setText('playBtnResign',tr.playBtnResign);
 
-  // Deposit page
   setText('depTag',tr.depTag);setText('depTitle',tr.depTitle);setText('depFormTitle',tr.depFormTitle);
   setText('depAmtLabel',tr.depAmtLabel);setText('depTxLabel',tr.depTxLabel);setText('depNoteLabel',tr.depNoteLabel);
   setText('depSubmitBtn',tr.depSubmitBtn);setText('depHistTitle',tr.depHistTitle);
   setText('depEmptyText',tr.depEmptyText);
 
-  // Withdrawal page
   setText('wdTag',tr.wdTag);setText('wdTitle',tr.wdTitle);setText('wdFormTitle',tr.wdFormTitle);
   setText('wdBalLabel',tr.wdBalLabel);setText('wdAmtLabel',tr.wdAmtLabel);setText('wdWalletLabel',tr.wdWalletLabel);
   setText('wdSubmitBtn',tr.wdSubmitBtn);setText('wdHistTitle',tr.wdHistTitle);
   setText('wdEmptyText',tr.wdEmptyText);
 
-  // Stats page
   setText('statsTag',tr.statsTag);setText('statsTitle',tr.statsTitle);setText('statsTierTitle',tr.statsTierTitle);
   setText('statsLblRating',tr.statsLblRating);setText('statsLblWins',tr.statsLblWins);
   setText('statsLblLosses',tr.statsLblLosses);setText('statsLblWr',tr.statsLblWr);
 
-  // Profile page — FIX 6: all stat labels translated
   setText('profTag',tr.profTag);setText('profTitle',tr.profTitle);setText('profSettingsTitle',tr.profSettingsTitle);
   setText('profUnLabel',tr.profUnLabel);setText('profEmLabel',tr.profEmLabel);setText('profPhoneLabel',tr.profPhoneLabel);
   setText('profPwTitle',tr.profPwTitle);setText('profNewPwLabel',tr.profNewPwLabel);setText('profConfPwLabel',tr.profConfPwLabel);
@@ -2884,13 +2747,10 @@ function setLang(code){
   setText('profLblRating',tr.profLblRating);setText('profLblWins',tr.profLblWins);setText('profLblCoins',tr.profLblCoins);
   setText('logoutBtn',tr.logoutBtn);
 
-  // Theme page
   setText('themeTag',tr.themeTag);setText('themeTitle',tr.themeTitle);setText('themeDesc',tr.themeDesc);
 
-  // Tournament page
   setText('tournTag',tr.tournTag);setText('tournTitle',tr.tournTitle);
 
-  // FIX: Translate tournament sidebar dropdown items
   var sbDrop=document.getElementById('sbTournDrop');
   if(sbDrop&&tr.tournSwiss){
     var subs=sbDrop.querySelectorAll('.sb-sub');
@@ -2898,12 +2758,10 @@ function setLang(code){
                   tr.tournRapid,tr.tournBlitz,tr.tournBullet,tr.tournUltra,
                   tr.tournSpring,tr.tournSummer,tr.tournAutumn,tr.tournWinter];
     subs.forEach(function(sub,i){if(tournMap[i])sub.textContent=tournMap[i];});
-    // Arena/Seasonal labels
     var dividers=sbDrop.querySelectorAll('div[style*="text-transform:uppercase"]');
     if(dividers[0]&&tr.tournArenaLabel)dividers[0].textContent=tr.tournArenaLabel;
     if(dividers[1]&&tr.tournSeasonalLabel)dividers[1].textContent=tr.tournSeasonalLabel;
   }
-  // Mobile drawer tournament dropdown
   var mobDrop=document.getElementById('mobTournDrop');
   if(mobDrop&&tr.tournSwiss){
     var mobSubs=mobDrop.querySelectorAll('.sb-sub');
@@ -2913,18 +2771,15 @@ function setLang(code){
     mobSubs.forEach(function(sub,i){if(tournMap2[i])sub.textContent=tournMap2[i];});
   }
 
-  // FIX 5B: Apply placeholder translations to ALL inputs with data-ph-key
   document.querySelectorAll('[data-ph-key]').forEach(function(el){
     var key=el.getAttribute('data-ph-key');
     if(tr[key]!==undefined)el.placeholder=tr[key];
   });
 
-  // Update active state on lang grids
   document.querySelectorAll('.sb-lang-item,.home-lang-btn').forEach(function(btn){
     btn.classList.toggle('active',btn.dataset.lang===code);
   });
 
-  // Rebuild sidebar lang grid labels if needed
   buildSbLangGrid();buildHomeLangGrid();buildMobLangGrid();
 }
 
@@ -2966,7 +2821,6 @@ function buildMobLangGrid(){
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded',function(){
-  // Load saved language
   var savedLang='en';
   try{savedLang=localStorage.getItem('cw7lang')||'en';}catch(e){}
   activeLang=savedLang;
@@ -2978,17 +2832,15 @@ document.addEventListener('DOMContentLoaded',function(){
   buildHomeLangGrid();
   buildMobLangGrid();
 
-  // FIX 5C: Always apply full language on init — even if 'en', runs same code path
   setLang(activeLang);
 
   loadLB();
+  loadBannerCarousel();
 
-  // Modal close on backdrop click
   document.getElementById('authModal').addEventListener('click',function(e){
     if(e.target===this){this.classList.remove('open');}
   });
 
-  // Keyboard shortcut: Escape closes modals
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){
       document.querySelectorAll('.modal.open').forEach(function(m){m.classList.remove('open');});
