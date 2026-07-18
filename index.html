@@ -96,24 +96,15 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .hero-btns{display:flex;gap:12px}
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
-.banner-carousel{position:relative;width:100%;overflow:hidden;background:var(--surface);border-bottom:1px solid var(--border)}
-.banner-track{display:flex;transition:transform .5s ease}
-.banner-slide{min-width:100%;aspect-ratio:10/3;flex-shrink:0}
-.banner-slide.clickable{cursor:pointer}
-.banner-slide img{width:100%;height:100%;object-fit:cover;display:block}
-.banner-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(15,33,46,.7);border:1px solid var(--border2);color:#fff;font-size:20px;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center;transition:background .15s}
-.banner-arrow:hover{background:rgba(15,33,46,.95)}
-.banner-arrow.left{left:14px}
-.banner-arrow.right{right:14px}
-.banner-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
-.banner-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:background .15s}
-.banner-dot.active{background:var(--accent)}
-.banner-skeleton{width:100%;aspect-ratio:10/3;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:bannerShimmer 1.4s ease infinite}
+.banner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.banner-cell{border-radius:10px;overflow:hidden;aspect-ratio:16/10;background:var(--surface2);position:relative}
+.banner-cell.clickable{cursor:pointer}
+.banner-cell img{width:100%;height:100%;object-fit:cover;display:block}
+.banner-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:bannerShimmer 1.4s ease infinite}
 @keyframes bannerShimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 @media(max-width:900px){
-.banner-slide{aspect-ratio:16/9}
-.banner-skeleton{aspect-ratio:16/9}
-.banner-arrow{width:28px;height:28px;font-size:16px}
+.banner-grid{grid-template-columns:1fr;padding:12px 14px;gap:10px}
+.banner-cell{aspect-ratio:16/9}
 }
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);direction:ltr}
 .stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
@@ -510,12 +501,10 @@ function _removeLoadBar(){
 </header>
 
 <!-- HOMEPAGE BANNERS -->
-<div id="bannerCarousel" class="banner-carousel">
-  <div id="bannerSkeleton" class="banner-skeleton"></div>
-  <button class="banner-arrow left" onclick="bannerNav(-1)" style="display:none">‹</button>
-  <div class="banner-track" id="bannerTrack"></div>
-  <button class="banner-arrow right" onclick="bannerNav(1)" style="display:none">›</button>
-  <div class="banner-dots" id="bannerDots"></div>
+<div id="bannerCarousel" class="banner-grid">
+  <div class="banner-cell" id="bannerCell0"><div class="banner-skeleton"></div></div>
+  <div class="banner-cell" id="bannerCell1"><div class="banner-skeleton"></div></div>
+  <div class="banner-cell" id="bannerCell2"><div class="banner-skeleton"></div></div>
 </div>
 
 <!-- APP -->
@@ -1790,19 +1779,16 @@ function buildTierTable(){
   t.appendChild(tbody);
 }
 
-// ── HOMEPAGE BANNER CAROUSEL ──
-var _bannerData=[], _bannerIdx=0, _bannerTimer=null;
+// ── HOMEPAGE BANNERS — static, all shown in parallel, no rotation ──
+var _bannerData=[null,null,null];
 
 function loadBannerCarousel(){
   var ids=['slot1','slot2','slot3'];
   Promise.all(ids.map(function(id){
     return db.collection('banners').doc(id).get().catch(function(){return null;});
   })).then(function(snaps){
-    _bannerData=[];
-    snaps.forEach(function(snap){
-      if(snap&&snap.exists&&snap.data().image){
-        _bannerData.push(snap.data());
-      }
+    _bannerData=snaps.map(function(snap){
+      return (snap&&snap.exists&&snap.data().image)?snap.data():null;
     });
     renderBannerCarousel();
   }).catch(function(){
@@ -1813,46 +1799,28 @@ function loadBannerCarousel(){
 
 function renderBannerCarousel(){
   var wrap=document.getElementById('bannerCarousel');
-  var skeleton=document.getElementById('bannerSkeleton');
-  var track=document.getElementById('bannerTrack');
-  var dots=document.getElementById('bannerDots');
-  if(!wrap||!track||!dots)return;
-  if(skeleton)skeleton.style.display='none';
-  if(!_bannerData.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  track.innerHTML='';dots.innerHTML='';
-  _bannerData.forEach(function(b,i){
-    var slide=document.createElement('div');
-    slide.className='banner-slide'+(b.link?' clickable':'');
-    var img=document.createElement('img');img.src=b.image;img.alt='Promotion';
-    slide.appendChild(img);
-    if(b.link){slide.onclick=function(){window.open(b.link,'_blank');};}
-    track.appendChild(slide);
-    var dot=document.createElement('div');dot.className='banner-dot'+(i===0?' active':'');
-    dot.onclick=function(){goToBanner(i);};
-    dots.appendChild(dot);
-  });
-  document.querySelectorAll('.banner-arrow').forEach(function(a){a.style.display=_bannerData.length>1?'flex':'none';});
-  _bannerIdx=0;
-  updateBannerPos();
-  startBannerAuto();
-}
-
-function updateBannerPos(){
-  var track=document.getElementById('bannerTrack');if(!track)return;
-  track.style.transform='translateX(-'+(_bannerIdx*100)+'%)';
-  document.querySelectorAll('.banner-dot').forEach(function(d,i){d.classList.toggle('active',i===_bannerIdx);});
-}
-function bannerNav(dir){
-  if(!_bannerData.length)return;
-  _bannerIdx=(_bannerIdx+dir+_bannerData.length)%_bannerData.length;
-  updateBannerPos();startBannerAuto();
-}
-function goToBanner(i){_bannerIdx=i;updateBannerPos();startBannerAuto();}
-function startBannerAuto(){
-  clearInterval(_bannerTimer);
-  if(_bannerData.length<=1)return;
-  _bannerTimer=setInterval(function(){bannerNav(1);},5000);
+  if(!wrap)return;
+  var anyBanner=false;
+  for(var i=0;i<3;i++){
+    var cell=document.getElementById('bannerCell'+i);
+    if(!cell)continue;
+    var b=_bannerData[i];
+    if(!b){
+      cell.style.display='none';
+      continue;
+    }
+    anyBanner=true;
+    cell.style.display='block';
+    cell.className='banner-cell'+(b.link?' clickable':'');
+    cell.innerHTML='';
+    var img=document.createElement('img');
+    img.src=b.image;img.alt='Promotion';
+    cell.appendChild(img);
+    if(b.link){
+      (function(link){cell.onclick=function(){window.open(link,'_blank');};})(b.link);
+    }
+  }
+  wrap.style.display=anyBanner?'grid':'none';
 }
 
 // ── AUTH ──
