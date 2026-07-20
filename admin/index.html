@@ -1143,14 +1143,24 @@ function approveDP(id){
   const d=ALL_DEPOSITS.find(x=>x.id===id);
   if(!d||d.status!=='pending'){toast('Already processed','info');return;}
   if(!confirm('Approve deposit of '+d.amount+' USDT for '+d.username+'?'))return;
-  db.collection('deposits').doc(id).set({status:'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
-  .then(()=>{
-    if(d.userId){
-      return db.collection('users').doc(d.userId).set({coins:firebase.firestore.FieldValue.increment(d.amount)},{merge:true});
-    }
-  }).then(()=>{
-    toast('✓ Approved! +'+d.amount+' coins credited to '+d.username,'ok');
-  }).catch(e=>{toast('Error: '+e.message,'er');console.error(e);});
+  const depRef=db.collection('deposits').doc(id);
+  db.runTransaction(function(tx){
+    return tx.get(depRef).then(function(depSnap){
+      if(!depSnap.exists)throw new Error('Deposit no longer exists');
+      const dep=depSnap.data();
+      if(dep.status!=='pending')throw new Error('Already processed ('+dep.status+')');
+      const amount=dep.amount||0;
+      if(amount<=0)throw new Error('Invalid deposit amount');
+      tx.set(depRef,{status:'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      if(dep.userId){
+        const userRef=db.collection('users').doc(dep.userId);
+        tx.set(userRef,{coins:firebase.firestore.FieldValue.increment(amount)},{merge:true});
+      }
+      return amount;
+    });
+  }).then(function(amount){
+    toast('✓ Approved! +'+amount+' coins credited to '+(d.username||'user'),'ok');
+  }).catch(function(e){toast('Error: '+e.message,'er');console.error(e);});
 }
 
 function rejectReq(id,type){
@@ -1193,17 +1203,31 @@ function renderWithdrawals(){
 function approveWD(id){
   const w=ALL_WITHDRAWALS.find(x=>x.id===id);
   if(!w||w.status!=='pending'){toast('Already processed','info');return;}
-  const u=ALL_USERS.find(x=>x.id===w.userId);
-  if(u&&(u.coins||0)<w.amount){toast('Insufficient coins! User has '+(u.coins||0)+' COINS','er');return;}
   if(!confirm('Approve withdrawal of '+w.amount+' USDT for '+w.username+'?\nWallet: '+w.wallet))return;
-  db.collection('withdrawals').doc(id).set({status:'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
-  .then(()=>{
-    if(w.userId){
-      return db.collection('users').doc(w.userId).set({coins:firebase.firestore.FieldValue.increment(-(w.amount))},{merge:true});
-    }
-  }).then(()=>{
-    toast('✓ Withdrawal approved! -'+w.amount+' USDT deducted from '+w.username,'ok');
-  }).catch(e=>{toast('Error: '+e.message,'er');console.error(e);});
+  const wdRef=db.collection('withdrawals').doc(id);
+  db.runTransaction(function(tx){
+    return tx.get(wdRef).then(function(wdSnap){
+      if(!wdSnap.exists)throw new Error('Withdrawal no longer exists');
+      const wd=wdSnap.data();
+      if(wd.status!=='pending')throw new Error('Already processed ('+wd.status+')');
+      const amount=wd.amount||0;
+      if(amount<=0)throw new Error('Invalid withdrawal amount');
+      if(!wd.userId){
+        tx.set(wdRef,{status:'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        return amount;
+      }
+      const userRef=db.collection('users').doc(wd.userId);
+      return tx.get(userRef).then(function(userSnap){
+        const liveCoins=userSnap.exists?(userSnap.data().coins||0):0;
+        if(liveCoins<amount)throw new Error('Insufficient coins! User has '+liveCoins+' COINS (live balance)');
+        tx.set(wdRef,{status:'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+        tx.set(userRef,{coins:firebase.firestore.FieldValue.increment(-amount)},{merge:true});
+        return amount;
+      });
+    });
+  }).then(function(amount){
+    toast('✓ Withdrawal approved! -'+amount+' USDT deducted from '+(w.username||'user'),'ok');
+  }).catch(function(e){toast('Error: '+e.message,'er');console.error(e);});
 }
 
 // ── VIEW REQUEST MODAL ──
