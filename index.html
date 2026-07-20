@@ -96,15 +96,16 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .hero-btns{display:flex;gap:12px}
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
-.banner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
-.banner-cell{border-radius:10px;overflow:hidden;aspect-ratio:16/10;background:var(--surface2);position:relative}
-.banner-cell.clickable{cursor:pointer}
+.banner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 24px 4px;max-width:1500px;margin:0 auto}
+.banner-cell{border-radius:12px;overflow:hidden;aspect-ratio:540/460;background:var(--surface2);position:relative;border:1px solid var(--border)}
+.banner-cell.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s}
+.banner-cell.clickable:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
 .banner-cell img{width:100%;height:100%;object-fit:cover;display:block}
 .banner-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:bannerShimmer 1.4s ease infinite}
 @keyframes bannerShimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 @media(max-width:900px){
-.banner-grid{grid-template-columns:1fr;padding:12px 14px;gap:10px}
-.banner-cell{aspect-ratio:16/9}
+.banner-grid{grid-template-columns:1fr;padding:10px 12px 0;gap:10px}
+.banner-cell{aspect-ratio:540/460;max-width:480px;margin:0 auto;width:100%}
 }
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);direction:ltr}
 .stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
@@ -500,13 +501,6 @@ function _removeLoadBar(){
   </div>
 </header>
 
-<!-- HOMEPAGE BANNERS -->
-<div id="bannerCarousel" class="banner-grid">
-  <div class="banner-cell" id="bannerCell0"><div class="banner-skeleton"></div></div>
-  <div class="banner-cell" id="bannerCell1"><div class="banner-skeleton"></div></div>
-  <div class="banner-cell" id="bannerCell2"><div class="banner-skeleton"></div></div>
-</div>
-
 <!-- APP -->
 <div class="app">
 
@@ -569,6 +563,12 @@ function _removeLoadBar(){
 
 <!-- HOME PAGE -->
 <div class="page active" id="page-home">
+  <!-- HOMEPAGE BANNERS -->
+  <div id="bannerCarousel" class="banner-grid">
+    <div class="banner-cell" id="bannerCell0"><div class="banner-skeleton"></div></div>
+    <div class="banner-cell" id="bannerCell1"><div class="banner-skeleton"></div></div>
+    <div class="banner-cell" id="bannerCell2"><div class="banner-skeleton"></div></div>
+  </div>
   <div class="hero">
     <div>
       <p id="heroTag" style="font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">♛ ChessWin7 — Skill Based Arena</p>
