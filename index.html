@@ -31,6 +31,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:"AIzaSyCarrpfqNE79t0kF7J9uJges2571HPU-M4",
@@ -1099,20 +1100,189 @@ function fmtTime(s) {
   return m + ':' + (sec < 10 ? '0' : '') + sec;
 }
 
+// ═══════════════════════════════════════════════════════
+//  MULTIPLAYER via Game Server (Socket.IO + server-side chess.js)
+//  Server validates every move — cheating impossible.
+// ═══════════════════════════════════════════════════════
+
+// ⚠ SET THIS to your server address after deploying (see DEPLOY_ORACLE.md)
+var GAME_SERVER_URL = 'https://chesswin7-server.onrender.com'; // ⚠️ REPLACE with YOUR exact Render URL (Render dashboard → your service → URL shown at the top)
+
+var socket = null;
 var _roomCode = null;
-var _roomRef = null;
-var _roomListener = null;
-var _myColor = null;
-var _lastMoveCount = 0;
+var _myColor = null;   // 'w' | 'b'
 
 function idxToAlg(idx) {
   var files = 'abcdefgh';
   return files[Cw(idx)] + (8 - Rw(idx));
 }
-
 function algToIdx(sq) {
   var files = 'abcdefgh';
   return (8 - parseInt(sq[1])) * 8 + files.indexOf(sq[0]);
+}
+
+function connectSocket(cb) {
+  if (socket && socket.connected) { if (cb) cb(); return; }
+  if (!window.currentUser) { openAuth('login'); return; }
+  window.currentUser.getIdToken().then(function(token) {
+    if (socket) { try { socket.disconnect(); } catch(e){} }
+    socket = io(GAME_SERVER_URL, { auth: { token: token }, transports: ['websocket', 'polling'] });
+
+    socket.on('connect', function() { if (cb) { cb(); cb = null; } });
+    socket.on('connect_error', function(err) {
+      toast('Game server unreachable: ' + err.message, 'err');
+      resetMatchButton();
+    });
+
+    // ── Room events ──
+    socket.on('room_created', function(d) {
+      _roomCode = d.code;
+      var rd = document.getElementById('roomDisplay');
+      if (rd) rd.style.display = 'block';
+      var rc = document.getElementById('roomCode');
+      if (rc) rc.textContent = d.code;
+      toast('Room created! Share code: ' + d.code, 'ok');
+    });
+    socket.on('room_error', function(d) { toast(d.message, 'err'); resetMatchButton(); });
+    socket.on('room_cancelled', function() {
+      _roomCode = null;
+      var rd = document.getElementById('roomDisplay');
+      if (rd) rd.style.display = 'none';
+    });
+
+    // ── Match events ──
+    socket.on('match_searching', function() {
+      var stEl = document.getElementById('matchSt');
+      if (stEl) stEl.style.display = 'block';
+    });
+    socket.on('match_cancelled', function() { resetMatchButton(); toast('Search cancelled', 'info'); });
+    socket.on('match_error', function(d) { toast(d.message, 'err'); resetMatchButton(); });
+
+    // ── Game lifecycle ──
+    socket.on('game_start', function(d) { beginServerGame(d, false); });
+    socket.on('game_resume', function(d) { beginServerGame(d, true); });
+
+    socket.on('opponent_move', function(d) {
+      applyOpponentMove(d.from, d.to, d.promotion);
+      syncClocks(d.whiteMs, d.blackMs);
+    });
+    socket.on('move_confirmed', function(d) {
+      syncClocks(d.whiteMs, d.blackMs);
+    });
+    socket.on('move_rejected', function(d) {
+      toast('Move rejected: ' + d.reason, 'err');
+      // Resync board from server truth
+      if (d.fen) loadFenIntoPlay(d.fen);
+    });
+
+    socket.on('game_over', function(d) {
+      pGO = true;
+      stopTimer();
+      syncClocks(d.whiteMs, d.blackMs);
+      var st = document.getElementById('pSt');
+      if (st) st.textContent = d.result;
+      toast(d.result, d.winner === _myColor ? 'ok' : (d.winner === 'draw' ? 'info' : 'err'));
+      _roomCode = null;
+      // Refresh user stats (server updated rating/wins/losses)
+      if (window.currentUser) {
+        db.collection('users').doc(window.currentUser.uid).get().then(function(snap) {
+          if (snap.exists) {
+            window.currentUserData = snap.data();
+            updateProfilePage(window.currentUserData);
+            updateStatsPage(window.currentUserData);
+          }
+        });
+      }
+    });
+
+    socket.on('draw_offered', function() {
+      var accept = confirm('Opponent offers a draw. Accept?');
+      socket.emit('respond_draw', { accept: accept });
+      if (!accept) toast('Draw declined', 'info');
+    });
+    socket.on('draw_declined', function() { toast('Opponent declined draw', 'info'); });
+
+    socket.on('opponent_disconnected', function(d) {
+      toast('Opponent disconnected — they have ' + (d.graceSeconds || 60) + 's to return or you win', 'info');
+    });
+    socket.on('opponent_reconnected', function() { toast('Opponent reconnected', 'info'); });
+  }).catch(function(e) { toast('Auth error: ' + e.message, 'err'); });
+}
+
+function beginServerGame(d, isResume) {
+  _roomCode = d.code;
+  _myColor = d.color;
+  pColor = d.color;
+  pMode = 'friend';
+  resetPlay();
+  if (isResume && d.history) {
+    // Replay server history to restore position
+    d.history.forEach(function(m) {
+      var fi = algToIdx(m.from), ti = algToIdx(m.to);
+      var mvs = allL(pT, pB, pEp, pCr);
+      var mv = mvs.find(function(x){ return x.f === fi && x.t === ti; });
+      if (mv) {
+        var res = applyM(mv, pB, pEp, pCr);
+        pB = res.b; pEp = res.ep; pCr = res.cr; pLmv = mv; pT = Op(pT); pMH.push(mv);
+      }
+    });
+    updMoves(); renderPlay();
+    toast('Game resumed', 'info');
+  }
+  var mn = document.getElementById('meName'), on = document.getElementById('oppName');
+  var myName = safeText(window.currentUserData ? window.currentUserData.username : 'You');
+  if (mn) mn.textContent = myName + ' (' + (d.color === 'w' ? 'White' : 'Black') + ')';
+  if (on) on.textContent = (d.opponentName || 'Opponent');
+  var rd = document.getElementById('roomDisplay');
+  if (rd) rd.style.display = 'none';
+  resetMatchButton();
+  goPage('play');
+  if (d.tc > 0) {
+    var myMs = d.color === 'w' ? d.whiteMs : d.blackMs;
+    var oppMs = d.color === 'w' ? d.blackMs : d.whiteMs;
+    var myTurnNow = isResume ? (d.turn === d.color) : (d.color === 'w');
+    startGameTimer(Math.ceil(myMs / 1000), myTurnNow);
+    _oppTime = Math.ceil(oppMs / 1000);
+    updateTimerDisplay();
+  } else {
+    var me = document.getElementById('meTimer'), op = document.getElementById('oppTimer');
+    if (me) me.textContent = '∞';
+    if (op) op.textContent = '∞';
+  }
+  var st = document.getElementById('pSt');
+  if (st) st.textContent = (isResume ? (d.turn === d.color) : d.color === 'w') ? 'Your move' : "Opponent's move";
+  if (!isResume) toast('Game started! You are ' + (d.color === 'w' ? 'White' : 'Black') + '.', 'ok');
+}
+
+function syncClocks(whiteMs, blackMs) {
+  if (whiteMs == null || _myColor == null) return;
+  _myTime = Math.ceil((_myColor === 'w' ? whiteMs : blackMs) / 1000);
+  _oppTime = Math.ceil((_myColor === 'w' ? blackMs : whiteMs) / 1000);
+  updateTimerDisplay();
+}
+
+function loadFenIntoPlay(fen) {
+  // Minimal FEN loader for resync after a rejected move
+  try {
+    var parts = fen.split(' ');
+    var rows = parts[0].split('/');
+    var b = Array(64).fill(null);
+    for (var r = 0; r < 8; r++) {
+      var c = 0;
+      for (var i = 0; i < rows[r].length; i++) {
+        var ch = rows[r][i];
+        if (/[1-8]/.test(ch)) { c += parseInt(ch); }
+        else {
+          b[r * 8 + c] = { c: ch === ch.toUpperCase() ? 'w' : 'b', n: ch.toUpperCase() };
+          c++;
+        }
+      }
+    }
+    pB = b;
+    pT = parts[1] === 'w' ? 'w' : 'b';
+    pSel = null; pLm = [];
+    renderPlay();
+  } catch (e) { console.warn('FEN resync failed', e); }
 }
 
 function applyOpponentMove(from, to, promotion) {
@@ -1121,9 +1291,7 @@ function applyOpponentMove(from, to, promotion) {
   var legalMvs = allL(pT, pB, pEp, pCr);
   var mv = null;
   for (var i = 0; i < legalMvs.length; i++) {
-    if (legalMvs[i].f === fi && legalMvs[i].t === ti) {
-      mv = legalMvs[i]; break;
-    }
+    if (legalMvs[i].f === fi && legalMvs[i].t === ti) { mv = legalMvs[i]; break; }
   }
   if (!mv) return;
   var res = applyM(mv, pB, pEp, pCr);
@@ -1133,253 +1301,49 @@ function applyOpponentMove(from, to, promotion) {
   if (_timerActive) switchTimerTurn();
   playCheckEnd();
   var st = document.getElementById('pSt');
-  if (st) st.textContent = 'Your move';
+  if (st && !pGO) st.textContent = 'Your move';
 }
 
-function listenForMoves(roomCode, myColor) {
-  if (_roomListener) { _roomRef.off('value', _roomListener); }
-  _roomRef = rtdb.ref('rooms/' + roomCode);
-  _lastMoveCount = pMH.length;
-
-  _roomListener = _roomRef.on('value', function(snap) {
-    var d = snap.val();
-    if (!d) return;
-
-    if (d.moves) {
-      var moveKeys = Object.keys(d.moves);
-      if (moveKeys.length > _lastMoveCount) {
-        for (var i = _lastMoveCount; i < moveKeys.length; i++) {
-          var mv = d.moves[moveKeys[i]];
-          var moverColor = mv.color;
-          if (moverColor !== myColor) {
-            applyOpponentMove(mv.from, mv.to, mv.promotion);
-          }
-        }
-        _lastMoveCount = moveKeys.length;
-      }
-    }
-
-    if (d.status === 'ended' && !pGO) {
-      pGO = true;
-      stopTimer();
-      var st = document.getElementById('pSt');
-      if (st) st.textContent = d.result || 'Game over';
-      toast(d.result || 'Game over', 'info');
-    }
-
-    if (d.drawOffer && d.drawOffer !== myColor) {
-      if (!d.drawAnswered) {
-        if (confirm('Opponent offers a draw. Accept?')) {
-          _roomRef.update({ drawAnswered: true, status: 'ended', result: 'Draw by agreement' });
-        } else {
-          _roomRef.update({ drawAnswered: true, drawDeclined: true });
-          toast('Draw declined', 'info');
-        }
-      }
-    }
-    if (d.drawDeclined) {
-      toast('Opponent declined draw', 'info');
-    }
-
-    if (d.disconnected && d.disconnected !== myColor) {
-      toast('Opponent disconnected!', 'err');
-    }
-  });
-}
-
+// ── Actions wired to server ──
 function createRoom() {
   if (!window.currentUser) { openAuth('login'); return; }
-  var tc = parseInt(document.getElementById('ftc').value) || 600;
-  var myName = safeText(window.currentUserData ? window.currentUserData.username : 'Player');
-
-  var code = Math.random().toString(36).substr(2, 6).toUpperCase();
-  _roomCode = code;
-  _myColor = 'white';
-
-  var roomData = {
-    host: window.currentUser.uid,
-    hostName: myName,
-    guest: null, guestName: null,
-    tc: tc, status: 'waiting',
-    moves: null, created: Date.now()
-  };
-
-  rtdb.ref('rooms/' + code).set(roomData).then(function() {
-    document.getElementById('roomDisplay').style.display = 'block';
-    document.getElementById('roomCode').textContent = code;
-    toast('Room created! Share code: ' + code, 'ok');
-
-    rtdb.ref('rooms/' + code + '/status').on('value', function(snap) {
-      if (snap.val() === 'playing') {
-        rtdb.ref('rooms/' + code + '/status').off('value');
-        rtdb.ref('rooms/' + code + '/guestName').once('value').then(function(s) {
-          var guestName = s.val() || 'Guest';
-          pColor = 'w'; pMode = 'friend'; _myColor = 'white';
-          document.getElementById('oppName').textContent = guestName;
-          document.getElementById('meName').textContent = myName + ' (White)';
-          resetPlay();
-          if (tc > 0) startGameTimer(tc, true);
-          else { document.getElementById('meTimer').textContent = '∞'; document.getElementById('oppTimer').textContent = '∞'; }
-          document.getElementById('roomDisplay').style.display = 'none';
-          toast('Game started! You are White.', 'ok');
-          listenForMoves(code, 'white');
-        });
-      }
-    });
-  }).catch(function(e) { toast('Error: ' + e.message, 'err'); });
+  connectSocket(function() {
+    var tc = parseInt(document.getElementById('ftc').value) || 600;
+    socket.emit('create_room', { tc: tc });
+  });
 }
 
 function joinRoom() {
   if (!window.currentUser) { openAuth('login'); return; }
   var code = (document.getElementById('joinCode').value || '').trim().toUpperCase();
   if (!code || code.length < 4) { toast('Enter a valid room code', 'err'); return; }
-  var myName = safeText(window.currentUserData ? window.currentUserData.username : 'Guest');
-
-  rtdb.ref('rooms/' + code).once('value').then(function(snap) {
-    var d = snap.val();
-    if (!d) { toast('Room not found: ' + code, 'err'); return; }
-    if (d.status !== 'waiting') { toast('Room already started or full', 'err'); return; }
-    if (d.host === window.currentUser.uid) { toast('Cannot join your own room', 'err'); return; }
-
-    return rtdb.ref('rooms/' + code).update({
-      guest: window.currentUser.uid,
-      guestName: myName,
-      status: 'playing'
-    }).then(function() {
-      _roomCode = code; _myColor = 'black';
-      pColor = 'b'; pMode = 'friend';
-      document.getElementById('oppName').textContent = d.hostName || 'Host';
-      document.getElementById('meName').textContent = myName + ' (Black)';
-      resetPlay();
-      var tc = d.tc || 600;
-      if (tc > 0) startGameTimer(tc, false);
-      else { document.getElementById('meTimer').textContent = '∞'; document.getElementById('oppTimer').textContent = '∞'; }
-      toast('Joined! You are Black.', 'ok');
-      listenForMoves(code, 'black');
-    });
-  }).catch(function(e) { toast('Error: ' + e.message, 'err'); });
+  connectSocket(function() {
+    socket.emit('join_room', { code: code });
+  });
 }
-
-var _matchRef = null;
-var _matchListener = null;
 
 function startMatch() {
   if (!window.currentUser) { openAuth('login'); return; }
   var btn = document.getElementById('matchBtn');
-  var stEl = document.getElementById('matchSt');
-
   if (btn && btn.dataset.searching === '1') {
-    if (_matchRef) { _matchRef.off('value', _matchListener); _matchRef.remove(); _matchRef = null; }
-    if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
-    if (stEl) stEl.style.display = 'none';
-    toast('Search cancelled', 'info');
+    if (socket && socket.connected) socket.emit('cancel_match');
+    resetMatchButton();
     return;
   }
-
-  var tc = parseInt(document.getElementById('mtc').value) || 600;
-  var myName = safeText(window.currentUserData ? window.currentUserData.username : 'Player');
-  var myRating = (window.currentUserData && window.currentUserData.rating) || 0;
-
-  if (btn) { btn.dataset.searching = '1'; btn.textContent = 'Cancel'; }
-  if (stEl) stEl.style.display = 'block';
-
-  rtdb.ref('matchQueue').orderByChild('tc').equalTo(tc).limitToFirst(10).once('value').then(function(snap) {
-    var found = null;
-    snap.forEach(function(child) {
-      var d = child.val();
-      if (d.uid !== window.currentUser.uid && !d.matched) {
-        found = { key: child.key, data: d };
-        return true;
-      }
-    });
-
-    if (found) {
-      var code = Math.random().toString(36).substr(2, 6).toUpperCase();
-      rtdb.ref('matchQueue/' + found.key).update({
-        matched: window.currentUser.uid,
-        matchedName: myName,
-        roomCode: code
-      });
-
-      var iAmWhite = Math.random() > 0.5;
-      _roomCode = code; _myColor = iAmWhite ? 'white' : 'black';
-
-      rtdb.ref('rooms/' + code).set({
-        host: iAmWhite ? window.currentUser.uid : found.data.uid,
-        hostName: iAmWhite ? myName : found.data.name,
-        guest: iAmWhite ? found.data.uid : window.currentUser.uid,
-        guestName: iAmWhite ? found.data.name : myName,
-        tc: tc, status: 'playing',
-        moves: null, created: Date.now()
-      }).then(function() {
-        pColor = iAmWhite ? 'w' : 'b'; pMode = 'friend';
-        document.getElementById('oppName').textContent = found.data.name || 'Opponent';
-        document.getElementById('meName').textContent = myName + ' (' + (iAmWhite ? 'White' : 'Black') + ')';
-        resetPlay();
-        if (tc > 0) startGameTimer(tc, iAmWhite);
-        else { document.getElementById('meTimer').textContent = '∞'; document.getElementById('oppTimer').textContent = '∞'; }
-        if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
-        if (stEl) stEl.style.display = 'none';
-        toast('Match found! You are ' + (iAmWhite ? 'White' : 'Black') + '.', 'ok');
-        listenForMoves(code, _myColor);
-
-        rtdb.ref('matchQueue/' + found.key).update({ roomCode: code, status: 'matched' });
-      });
-
-    } else {
-      _matchRef = rtdb.ref('matchQueue').push({
-        uid: window.currentUser.uid,
-        name: myName,
-        rating: myRating,
-        tc: tc,
-        matched: null,
-        status: 'waiting',
-        ts: firebase.database.ServerValue.TIMESTAMP
-      });
-
-      _matchListener = _matchRef.on('value', function(snap2) {
-        var d2 = snap2.val();
-        if (!d2) return;
-        if (d2.matched && d2.roomCode) {
-          _matchRef.off('value', _matchListener);
-          _matchRef.remove(); _matchRef = null;
-
-          var code = d2.roomCode;
-          _roomCode = code;
-
-          rtdb.ref('rooms/' + code).once('value').then(function(rSnap) {
-            var rd = rSnap.val();
-            if (!rd) return;
-            var iAmWhite = rd.host === window.currentUser.uid;
-            _myColor = iAmWhite ? 'white' : 'black';
-            pColor = iAmWhite ? 'w' : 'b'; pMode = 'friend';
-            document.getElementById('oppName').textContent = iAmWhite ? (rd.guestName || 'Opponent') : (rd.hostName || 'Opponent');
-            document.getElementById('meName').textContent = myName + ' (' + (iAmWhite ? 'White' : 'Black') + ')';
-            resetPlay();
-            if (tc > 0) startGameTimer(tc, iAmWhite);
-            else { document.getElementById('meTimer').textContent = '∞'; document.getElementById('oppTimer').textContent = '∞'; }
-            if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
-            if (stEl) stEl.style.display = 'none';
-            toast('Match found! You are ' + (iAmWhite ? 'White' : 'Black') + '.', 'ok');
-            listenForMoves(code, _myColor);
-          });
-        }
-      });
-
-      setTimeout(function() {
-        if (btn && btn.dataset.searching === '1') {
-          if (_matchRef) { _matchRef.off('value', _matchListener); _matchRef.remove(); _matchRef = null; }
-          if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
-          if (stEl) stEl.style.display = 'none';
-          toast('No opponent found. Try again.', 'info');
-        }
-      }, 120000);
-    }
-  }).catch(function(e) {
-    if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
-    if (stEl) stEl.style.display = 'none';
-    toast('Matchmaking error: ' + e.message, 'err');
+  connectSocket(function() {
+    var tc = parseInt(document.getElementById('mtc').value) || 600;
+    if (btn) { btn.dataset.searching = '1'; btn.textContent = 'Cancel'; }
+    var stEl = document.getElementById('matchSt');
+    if (stEl) stEl.style.display = 'block';
+    socket.emit('find_match', { tc: tc });
   });
+}
+
+function resetMatchButton() {
+  var btn = document.getElementById('matchBtn');
+  if (btn) { btn.dataset.searching = '0'; btn.textContent = 'Find Opponent'; }
+  var stEl = document.getElementById('matchSt');
+  if (stEl) stEl.style.display = 'none';
 }
 
 function makeSafeEl(tag,cls,text){var el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=safeText(text);return el;}
@@ -1546,15 +1510,11 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
     if(mv){
       pHist.push({b:pB.slice(),t:pT,s:pSel,l:pLm.slice(),lv:pLmv,cr:Object.assign({},pCr),ep:pEp});
       var res=applyM(mv,pB,pEp,pCr);pB=res.b;pEp=res.ep;pCr=res.cr;pLmv=mv;pSel=null;pLm=[];pT=Op(pT);pMH.push(mv);updMoves();renderPlay();
-      if(pMode==='friend'&&_roomCode&&_myColor){
-        var fromSq=idxToAlg(mv.f);
-        var toSq=idxToAlg(mv.t);
-        rtdb.ref('rooms/'+_roomCode+'/moves').push({
-          color:_myColor,
-          from:fromSq,
-          to:toSq,
-          promotion:mv.pro?'q':null,
-          ts:firebase.database.ServerValue.TIMESTAMP
+      if(pMode==='friend'&&_roomCode&&_myColor&&socket&&socket.connected){
+        socket.emit('move',{
+          from:idxToAlg(mv.f),
+          to:idxToAlg(mv.t),
+          promotion:mv.pro?'q':null
         });
         if(_timerActive)switchTimerTurn();
       }
@@ -1592,8 +1552,8 @@ function startAI(){var col=document.getElementById('aiCol').value;pColor=col==='
   if(pColor==='b'){var atbS=document.getElementById('aiThinkBar');if(atbS)atbS.style.display='block';var bm=bestAI(pB,4,pEp,pCr);if(bm){var res=applyM(bm,pB,pEp,pCr);pB=res.b;pEp=res.ep;pCr=res.cr;pLmv=bm;pT=Op(pT);pMH.push(bm);updMoves();renderPlay();playCheckEnd();var atbE=document.getElementById('aiThinkBar');if(atbE)atbE.style.display='none';}}}
 function switchMode(m,btn){pMode=m;document.querySelectorAll('.mt').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.mc').forEach(function(c){c.classList.remove('active');});var mc=document.getElementById('mc-'+m);if(mc)mc.classList.add('active');}
 function offerDraw(){
-  if(pMode==='friend'&&_roomCode&&_myColor){
-    rtdb.ref('rooms/'+_roomCode).update({drawOffer:_myColor,drawAnswered:false});
+  if(pMode==='friend'&&_roomCode&&socket&&socket.connected){
+    socket.emit('offer_draw');
     toast('Draw offered to opponent','info');
   } else {
     toast('Draw offered','info');
@@ -1601,12 +1561,10 @@ function offerDraw(){
 }
 function resignGame(){
   if(pGO)return;
-  if(pMode==='friend'&&_roomCode){
-    var winner=_myColor==='white'?'black':'white';
-    rtdb.ref('rooms/'+_roomCode).update({
-      status:'ended',
-      result:(_myColor==='white'?'Black':'White')+' wins by resignation'
-    });
+  if(pMode==='friend'&&_roomCode&&socket&&socket.connected){
+    socket.emit('resign');
+    // server will send game_over which sets pGO and messages
+    return;
   }
   pGO=true;stopTimer();
   toast('You resigned','info');
