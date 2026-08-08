@@ -98,6 +98,11 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
 .banner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 24px 4px;max-width:1500px;margin:0 auto}
+.banner-hero{border-radius:12px;overflow:hidden;aspect-ratio:540/460;background:var(--surface2);position:relative;border:1px solid var(--border)}
+.banner-hero.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s}
+.banner-hero.clickable:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
+.banner-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.banner-scroll{display:contents}
 .banner-cell{border-radius:12px;overflow:hidden;aspect-ratio:540/460;background:var(--surface2);position:relative;border:1px solid var(--border)}
 .banner-cell.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s}
 .banner-cell.clickable:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
@@ -105,8 +110,10 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .banner-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:bannerShimmer 1.4s ease infinite}
 @keyframes bannerShimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 @media(max-width:900px){
-.banner-grid{grid-template-columns:1fr;padding:10px 12px 0;gap:10px}
-.banner-cell{aspect-ratio:540/460;max-width:480px;margin:0 auto;width:100%}
+.banner-grid{grid-template-columns:none;display:block;padding:10px 12px 0}
+.banner-hero{width:100%;margin-bottom:10px}
+.banner-scroll{display:flex;flex-direction:row;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.banner-scroll .banner-cell{flex:0 0 78%;max-width:340px;scroll-snap-align:start}
 }
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);direction:ltr}
 .stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
@@ -143,10 +150,10 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
-.sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.8);z-index:1;pointer-events:none}
-.sq.lc::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 min(4px,10%) rgba(0,231,1,.9);z-index:1;pointer-events:none}
-.sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.35);z-index:1;pointer-events:none}
-.sq.lmv::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.25);z-index:1;pointer-events:none}
+.sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.75);z-index:1;pointer-events:none}
+.sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(0,231,1,.85);z-index:1;pointer-events:none}
+.sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.28);z-index:1;pointer-events:none}
+.sq.lmv::before{content:'';position:absolute;inset:0;background:rgba(255,183,3,.22);z-index:1;pointer-events:none}
 .sq:hover{filter:brightness(1.3)}
 .piece{pointer-events:none;user-select:none;line-height:1}
 .board-controls{display:flex;gap:8px;margin-top:10px;justify-content:center;flex-wrap:wrap;align-items:center;width:100%}
@@ -342,10 +349,16 @@ header{padding:0 14px;gap:8px}
 #headerRight > div{gap:4px!important}
 #navBalance{padding:3px 8px!important;font-size:10px!important}
 #navBalance span:first-child{display:none!important}
+#navExposure{padding:3px 6px!important;font-size:10px!important}
+#navExposure span:first-child{display:none!important}
+#pBtn{width:28px!important;height:28px!important;font-size:13px!important}
 #promoBtn{display:none!important}
 }
 @media(max-width:480px){
-header{padding:0 10px}
+header{padding:0 8px}
+#headerRight > div{gap:3px!important}
+#headerRight .btn{padding:3px 6px!important;font-size:9px!important}
+#navBalance,#navExposure{padding:2px 5px!important;font-size:9px!important}
 .logo{font-size:14px}
 .hero h1{font-size:22px}
 .stats-bar{grid-template-columns:1fr}
@@ -566,9 +579,11 @@ function _removeLoadBar(){
 <div class="page active" id="page-home">
   <!-- HOMEPAGE BANNERS -->
   <div id="bannerCarousel" class="banner-grid">
-    <div class="banner-cell" id="bannerCell0"><div class="banner-skeleton"></div></div>
-    <div class="banner-cell" id="bannerCell1"><div class="banner-skeleton"></div></div>
-    <div class="banner-cell" id="bannerCell2"><div class="banner-skeleton"></div></div>
+    <div class="banner-hero" id="bannerCell0"><div class="banner-skeleton"></div></div>
+    <div class="banner-scroll">
+      <div class="banner-cell" id="bannerCell1"><div class="banner-skeleton"></div></div>
+      <div class="banner-cell" id="bannerCell2"><div class="banner-skeleton"></div></div>
+    </div>
   </div>
   <div class="hero">
     <div>
@@ -1763,13 +1778,14 @@ function renderBannerCarousel(){
     var cell=document.getElementById('bannerCell'+i);
     if(!cell)continue;
     var b=_bannerData[i];
+    var baseClass=(i===0)?'banner-hero':'banner-cell';
     if(!b){
       cell.style.display='none';
       continue;
     }
     anyBanner=true;
     cell.style.display='block';
-    cell.className='banner-cell'+(b.link?' clickable':'');
+    cell.className=baseClass+(b.link?' clickable':'');
     cell.innerHTML='';
     var img=document.createElement('img');
     img.src=b.image;img.alt='Promotion';
