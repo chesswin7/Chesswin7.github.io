@@ -97,23 +97,24 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .hero-btns{display:flex;gap:12px}
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
-.banner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 24px 4px;max-width:1500px;margin:0 auto}
-.banner-hero{border-radius:12px;overflow:hidden;aspect-ratio:540/460;background:var(--surface2);position:relative;border:1px solid var(--border)}
-.banner-hero.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s}
-.banner-hero.clickable:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
-.banner-hero img{width:100%;height:100%;object-fit:cover;display:block}
-.banner-scroll{display:contents}
-.banner-cell{border-radius:12px;overflow:hidden;aspect-ratio:540/460;background:var(--surface2);position:relative;border:1px solid var(--border)}
-.banner-cell.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s}
-.banner-cell.clickable:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.4)}
-.banner-cell img{width:100%;height:100%;object-fit:cover;display:block}
+.banner-slider{position:relative;width:100%;max-width:900px;margin:16px auto 4px;padding:0 24px}
+.banner-slider-viewport{position:relative;overflow:hidden;border-radius:14px;border:1px solid var(--border)}
+.banner-slider-track{display:flex;transition:transform .35s ease}
+.banner-slide{min-width:100%;aspect-ratio:540/460;flex-shrink:0;background:var(--surface2)}
+.banner-slide.clickable{cursor:pointer}
+.banner-slide img{width:100%;height:100%;object-fit:cover;display:block}
+.banner-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(15,33,46,.75);border:1px solid var(--border2);color:#fff;font-size:20px;cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.banner-arrow:hover{background:rgba(15,33,46,.95)}
+.banner-arrow.left{left:8px}
+.banner-arrow.right{right:8px}
+.banner-dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.banner-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:all .2s}
+.banner-dot.active{background:var(--accent);width:22px;border-radius:4px}
 .banner-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 37%,var(--surface) 63%);background-size:400% 100%;animation:bannerShimmer 1.4s ease infinite}
 @keyframes bannerShimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 @media(max-width:900px){
-.banner-grid{grid-template-columns:none;display:block;padding:10px 12px 0}
-.banner-hero{width:100%;margin-bottom:10px}
-.banner-scroll{display:flex;flex-direction:row;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px}
-.banner-scroll .banner-cell{flex:0 0 78%;max-width:340px;scroll-snap-align:start}
+.banner-slider{padding:0 10px;margin:10px auto 4px}
+.banner-arrow{width:30px;height:30px;font-size:16px}
 }
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);direction:ltr}
 .stat-item{padding:32px 24px;text-align:center;border-right:1px solid var(--border)}
@@ -578,12 +579,14 @@ function _removeLoadBar(){
 <!-- HOME PAGE -->
 <div class="page active" id="page-home">
   <!-- HOMEPAGE BANNERS -->
-  <div id="bannerCarousel" class="banner-grid">
-    <div class="banner-hero" id="bannerCell0"><div class="banner-skeleton"></div></div>
-    <div class="banner-scroll">
-      <div class="banner-cell" id="bannerCell1"><div class="banner-skeleton"></div></div>
-      <div class="banner-cell" id="bannerCell2"><div class="banner-skeleton"></div></div>
+  <div id="bannerCarousel" class="banner-slider">
+    <div class="banner-slider-viewport">
+      <div id="bannerSkeleton" class="banner-skeleton"></div>
+      <div class="banner-slider-track" id="bannerSliderTrack"></div>
     </div>
+    <button class="banner-arrow left" onclick="bannerNav(-1)" style="display:none">‹</button>
+    <button class="banner-arrow right" onclick="bannerNav(1)" style="display:none">›</button>
+    <div class="banner-dots" id="bannerDots"></div>
   </div>
   <div class="hero">
     <div>
@@ -1441,29 +1444,52 @@ var THEMES=[
 var activeTheme=0;
 function getDark(){return THEMES[activeTheme].dark;}function getLight(){return THEMES[activeTheme].light;}
 
+var _boardCache={};
 function renderBoard(elId,brd,sel,lm,lmv,flip){
   var el=document.getElementById(elId);if(!el)return;
-  el.innerHTML='';
-  for(var vi=0;vi<64;vi++){
-    var idx=flip?63-vi:vi;var r=Rw(idx),c=Cw(idx);
-    var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
+  var cache=_boardCache[elId];
+  if(!cache||cache.flip!==flip){
+    el.innerHTML='';
+    var squares=[];
+    for(var vi=0;vi<64;vi++){
+      var idx=flip?63-vi:vi;
+      var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
+      sq.addEventListener('click',function(e){
+        var ii=parseInt(e.currentTarget.dataset.i);
+        if(e.currentTarget.closest('#pBoard'))playClick(ii);else homeClick(ii);
+      });
+      el.appendChild(sq);
+      squares[idx]=sq;
+    }
+    cache={flip:flip,squares:squares};
+    _boardCache[elId]=cache;
+  }
+  var squares=cache.squares;
+  for(var idx=0;idx<64;idx++){
+    var sq=squares[idx];
+    var r=Rw(idx),c=Cw(idx);
     var isDark=(r+c)%2===0;
     sq.style.background=isDark?getDark():getLight();
+    sq.className='sq';
     if(lmv&&(idx===lmv.f||idx===lmv.t))sq.classList.add('lmv');
     if(idx===sel)sq.classList.add('sel');
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
-    if(brd[idx]){
-      var sp=document.createElement('img');
-      var pk=brd[idx].c+brd[idx].n.toLowerCase();
-      sp.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';
-      sp.alt=pk;sp.style.cssText='width:88%;height:88%;object-fit:contain;pointer-events:none;user-select:none;display:block;margin:auto';
-      sq.appendChild(sp);
+    var piece=brd[idx];
+    var existingImg=sq.querySelector('img');
+    if(piece){
+      var pk=piece.c+piece.n.toLowerCase();
+      var src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';
+      if(existingImg){
+        if(existingImg.dataset.pk!==pk){existingImg.src=src;existingImg.alt=pk;existingImg.dataset.pk=pk;}
+      }else{
+        var sp=document.createElement('img');
+        sp.src=src;sp.alt=pk;sp.dataset.pk=pk;
+        sp.style.cssText='width:88%;height:88%;object-fit:contain;pointer-events:none;user-select:none;display:block;margin:auto';
+        sq.appendChild(sp);
+      }
+    }else if(existingImg){
+      existingImg.remove();
     }
-    sq.addEventListener('click',function(e){
-      var ii=parseInt(e.currentTarget.dataset.i);
-      if(e.currentTarget.closest('#pBoard'))playClick(ii);else homeClick(ii);
-    });
-    el.appendChild(sq);
   }
 }
 function setCoords(rId,fId,flip,sqSz){
@@ -1752,16 +1778,17 @@ function buildTierTable(){
   t.appendChild(tbody);
 }
 
-// ── HOMEPAGE BANNERS — static, all shown in parallel, no rotation ──
-var _bannerData=[null,null,null];
+// ── HOMEPAGE BANNERS — one slide at a time, manual slide via arrows/dots/swipe, NO auto-rotation ──
+var _bannerData=[], _bannerIdx=0;
 
 function loadBannerCarousel(){
   var ids=['slot1','slot2','slot3'];
   Promise.all(ids.map(function(id){
     return db.collection('banners').doc(id).get().catch(function(){return null;});
   })).then(function(snaps){
-    _bannerData=snaps.map(function(snap){
-      return (snap&&snap.exists&&snap.data().image)?snap.data():null;
+    _bannerData=[];
+    snaps.forEach(function(snap){
+      if(snap&&snap.exists&&snap.data().image){_bannerData.push(snap.data());}
     });
     renderBannerCarousel();
   }).catch(function(){
@@ -1772,29 +1799,56 @@ function loadBannerCarousel(){
 
 function renderBannerCarousel(){
   var wrap=document.getElementById('bannerCarousel');
-  if(!wrap)return;
-  var anyBanner=false;
-  for(var i=0;i<3;i++){
-    var cell=document.getElementById('bannerCell'+i);
-    if(!cell)continue;
-    var b=_bannerData[i];
-    var baseClass=(i===0)?'banner-hero':'banner-cell';
-    if(!b){
-      cell.style.display='none';
-      continue;
-    }
-    anyBanner=true;
-    cell.style.display='block';
-    cell.className=baseClass+(b.link?' clickable':'');
-    cell.innerHTML='';
-    var img=document.createElement('img');
-    img.src=b.image;img.alt='Promotion';
-    cell.appendChild(img);
-    if(b.link){
-      (function(link){cell.onclick=function(){window.open(link,'_blank');};})(b.link);
-    }
-  }
-  wrap.style.display=anyBanner?'grid':'none';
+  var skeleton=document.getElementById('bannerSkeleton');
+  var track=document.getElementById('bannerSliderTrack');
+  var dots=document.getElementById('bannerDots');
+  if(!wrap||!track||!dots)return;
+  if(skeleton)skeleton.style.display='none';
+  if(!_bannerData.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  track.innerHTML='';dots.innerHTML='';
+  _bannerData.forEach(function(b,i){
+    var slide=document.createElement('div');
+    slide.className='banner-slide'+(b.link?' clickable':'');
+    var img=document.createElement('img');img.src=b.image;img.alt='Promotion';
+    slide.appendChild(img);
+    if(b.link){(function(link){slide.onclick=function(){window.open(link,'_blank');};})(b.link);}
+    track.appendChild(slide);
+    var dot=document.createElement('div');dot.className='banner-dot'+(i===0?' active':'');
+    dot.onclick=function(){goToBanner(i);};
+    dots.appendChild(dot);
+  });
+  document.querySelectorAll('#bannerCarousel .banner-arrow').forEach(function(a){a.style.display=_bannerData.length>1?'flex':'none';});
+  _bannerIdx=0;
+  updateBannerPos();
+  setupBannerSwipe();
+}
+
+function updateBannerPos(){
+  var track=document.getElementById('bannerSliderTrack');if(!track)return;
+  track.style.transform='translateX(-'+(_bannerIdx*100)+'%)';
+  document.querySelectorAll('.banner-dot').forEach(function(d,i){d.classList.toggle('active',i===_bannerIdx);});
+}
+function bannerNav(dir){
+  if(!_bannerData.length)return;
+  _bannerIdx=(_bannerIdx+dir+_bannerData.length)%_bannerData.length;
+  updateBannerPos();
+}
+function goToBanner(i){_bannerIdx=i;updateBannerPos();}
+
+var _bannerSwipeBound=false;
+function setupBannerSwipe(){
+  if(_bannerSwipeBound)return;
+  var track=document.getElementById('bannerSliderTrack');if(!track)return;
+  var startX=null;
+  track.addEventListener('touchstart',function(e){startX=e.touches[0].clientX;},{passive:true});
+  track.addEventListener('touchend',function(e){
+    if(startX===null)return;
+    var dx=e.changedTouches[0].clientX-startX;
+    if(Math.abs(dx)>40){bannerNav(dx<0?1:-1);}
+    startX=null;
+  },{passive:true});
+  _bannerSwipeBound=true;
 }
 
 // ── AUTH ──
