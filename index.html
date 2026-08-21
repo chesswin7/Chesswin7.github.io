@@ -364,9 +364,6 @@ header{padding:0 14px;gap:8px}
 #navExposure span:first-child{display:none!important}
 #pBtn{width:28px!important;height:28px!important;font-size:13px!important}
 #promoBtn{display:none!important}
-#leaderboard{padding:32px 0!important}
-#leaderboard>div:first-child{padding:0 16px!important}
-#leaderboard #lbTitle{font-size:22px!important;margin-bottom:16px!important}
 }
 @media(max-width:480px){
 header{padding:0 8px}
@@ -396,9 +393,6 @@ header{padding:0 8px}
 .home-lang-btn{padding:8px 10px}
 .home-lang-btn .lname{font-size:12px}
 .home-lang-btn .flag{font-size:16px}
-#leaderboard{padding:24px 0!important}
-#leaderboard>div:first-child{padding:0 12px!important}
-#leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 .profile-stats{grid-template-columns:repeat(3,1fr)}
 .cards-grid{grid-template-columns:1fr}
 .board-controls .btn{padding:5px 8px;font-size:10px}
@@ -848,7 +842,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Entry</span><span class="val">Free</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">2,000 COINS</span></div>
         <div class="card-row"><span class="lbl">Time</span><span class="val">10min Rapid</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('swiss')">Join</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Join</button>
       </div>
       <div class="card" id="card-knockout">
         <div class="card-badge" style="background:var(--accent2);color:#fff">Knockout</div>
@@ -857,7 +851,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Entry</span><span class="val">200 COINS</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">5,000 COINS</span></div>
         <div class="card-row"><span class="lbl">Time</span><span class="val">5min Blitz</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('knockout')">Join</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Join</button>
       </div>
       <div class="card" id="card-double">
         <div class="card-badge" style="background:#9b59b6;color:#fff">Double</div>
@@ -866,7 +860,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Entry</span><span class="val">300 COINS</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">8,000 COINS</span></div>
         <div class="card-row"><span class="lbl">Time</span><span class="val">5min Blitz</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('double')">Join</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Join</button>
       </div>
     </div>
   </div>
@@ -879,7 +873,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Time</span><span class="val">30s per side</span></div>
         <div class="card-row"><span class="lbl">Entry</span><span class="val">50 COINS</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">500 COINS</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('ultra')">Join</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Join</button>
       </div>
       <div class="card" id="card-bullet">
         <div class="card-badge" style="background:#e67e22;color:#fff">Bullet</div>
@@ -887,7 +881,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Time</span><span class="val">1min per side</span></div>
         <div class="card-row"><span class="lbl">Entry</span><span class="val">100 COINS</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">1,000 COINS</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('bullet')">Join</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Join</button>
       </div>
       <div class="card" id="card-blitz">
         <div class="card-badge">Blitz</div>
@@ -895,7 +889,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Time</span><span class="val">3min per side</span></div>
         <div class="card-row"><span class="lbl">Entry</span><span class="val">100 COINS</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">1,000 COINS</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('blitz')">Enter Tournament</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Enter Tournament</button>
       </div>
       <div class="card" id="card-rapid">
         <div class="card-badge" style="background:var(--accent2);color:#fff">Rapid</div>
@@ -903,7 +897,7 @@ function _removeLoadBar(){
         <div class="card-row"><span class="lbl">Time</span><span class="val">10min per side</span></div>
         <div class="card-row"><span class="lbl">Entry</span><span class="val">250 COINS</span></div>
         <div class="card-row"><span class="lbl">Prize</span><span class="val">5,000 COINS</span></div>
-        <button class="btn" style="width:100%" onclick="joinTournament('rapid')">Enter Tournament</button>
+        <button class="btn" style="width:100%" onclick="requireLogin()">Enter Tournament</button>
       </div>
     </div>
   </div>
@@ -1564,20 +1558,6 @@ function resignGame(){
   var st=document.getElementById('pSt');if(st)st.textContent='You resigned';
 }
 function requireLogin(){if(!window.currentUser){openAuth('signup');toast('Please sign up to play tournaments','info');}else{goPage('play');}}
-var TOURN_TC={swiss:600,knockout:180,double:180,ultra:30,bullet:60,blitz:180,rapid:600};
-function joinTournament(type){
-  if(!window.currentUser){openAuth('signup');toast('Please sign up to play tournaments','info');return;}
-  var tc=TOURN_TC[type]||600;
-  goPage('play');
-  setTimeout(function(){
-    var tab3=document.getElementById('modeTab3');
-    if(tab3)switchMode('match',tab3);
-    var sel=document.getElementById('mtc');
-    if(sel)sel.value=String(tc);
-    toast('Joining tournament — finding an opponent...','info');
-    startMatch();
-  },150);
-}
 // Mini boards
 var NAMES_W=['KingMosin','DubaiKnight','GoldBishop','BlitzKing','QueenGambit','NightRider','PawnStorm','TacticalFox'];
 var NAMES_B=['SilverRook','CastleRush','EndgameWiz','PinAndFork','ZugzwangK','BishopPair','GrandPatzer','DesertKnight'];
