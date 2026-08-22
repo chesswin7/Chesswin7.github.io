@@ -159,8 +159,8 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
-.sq-coord-rank{position:absolute;top:1px;left:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;opacity:.85}
-.sq-coord-file{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;opacity:.85}
+.sq-coord-rank{position:absolute;top:1px;left:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.6)}
+.sq-coord-file{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.6)}
 #h-ranks,#h-files,#p-ranks,#p-files{display:none}
 .ai-think-chip{display:none;width:fit-content;margin:0 auto 8px;padding:5px 14px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:20px;font-size:11px;font-weight:800;color:var(--accent2);text-align:center;white-space:nowrap}
 .sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.75);z-index:1;pointer-events:none}
@@ -314,6 +314,8 @@ header{padding:0 14px;gap:8px}
 .hero-btns .btn{width:100%;text-align:center;font-size:14px;padding:13px 20px;white-space:nowrap}
 .board-wrap{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .hero{justify-items:center}
+.hero>div{text-align:center;display:flex;flex-direction:column;align-items:center}
+.hero h1,.hero p{text-align:center}
 .board-wrap > div{display:flex;justify-content:center;align-items:flex-start;padding-left:0!important}
 .chessboard{grid-template-columns:repeat(8,min(10.2vw,44px))!important;grid-template-rows:repeat(8,min(10.2vw,44px))!important}
 .sq{width:min(10.2vw,44px)!important;height:min(10.2vw,44px)!important}
@@ -376,9 +378,11 @@ header{padding:0 8px}
 #navBalance,#navExposure{padding:2px 5px!important;font-size:9px!important}
 .logo{font-size:14px}
 .hero h1{font-size:22px}
-.stats-bar{grid-template-columns:1fr}
-.stat-item{border-right:none;border-bottom:1px solid var(--border);padding:16px}
-.stat-item:last-child{border-bottom:none}
+.stats-bar{grid-template-columns:repeat(3,1fr)}
+.stat-item{border-right:1px solid var(--border);border-bottom:none;padding:14px 6px}
+.stat-item:last-child{border-right:none}
+.stat-val{font-size:18px}
+.stat-label{font-size:9px}
 .mini-row{grid-template-columns:1fr;gap:10px}
 .lb-head{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
 .lb-row{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
@@ -454,9 +458,9 @@ function _removeLoadBar(){
     <div class="sb-link" onclick="goPage('play');closeMobDrawer()"><span class="sb-icon">♟</span>Play</div>
     <div class="sb-link" onclick="scrollToId('arena');closeMobDrawer()"><span class="sb-icon">🏟</span>Arena</div>
     <div class="sb-link" onclick="goPage('promotions');closeMobDrawer()"><span class="sb-icon">🎁</span>Promotions</div>
-    <div style="padding:12px 16px;display:flex;gap:8px">
-      <button class="btn btn-o btn-sm" style="flex:1" onclick="openAuth('login');closeMobDrawer()">Login</button>
-      <button class="btn btn-sm" style="flex:1" onclick="openAuth('signup');closeMobDrawer()">Sign Up</button>
+    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-o" style="width:100%;padding:16px 20px;font-size:16px" onclick="openAuth('login');closeMobDrawer()">Login</button>
+      <button class="btn" style="width:100%;padding:16px 20px;font-size:16px" onclick="openAuth('signup');closeMobDrawer()">Sign Up</button>
     </div>
   </div>
   <div id="mobAuthLinks" style="display:none">
@@ -748,7 +752,7 @@ function _removeLoadBar(){
     <div class="play-board-wrap">
       <div class="player-bar" id="oppBar"><span id="oppName">Opponent</span><span id="oppTimer">—</span></div>
       <div class="ai-think-chip" id="aiThinkBar">🤖 AI Thinking...</div>
-      <div style="display:flex;gap:8px;align-items:flex-start">
+      <div style="display:flex;gap:8px;align-items:flex-start;justify-content:center;width:100%">
         <div style="display:flex;flex-direction:column;width:20px" id="p-ranks"></div>
         <div>
           <div class="chessboard" id="pBoard" style="grid-template-columns:repeat(8,55px);grid-template-rows:repeat(8,55px)"></div>
@@ -1432,9 +1436,6 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     var isDark=(r+c)%2===0;
     sq.style.background=isDark?getDark():getLight();
     sq.className='sq';
-    var rlab2=sq.querySelector('.sq-coord-rank'),flab2=sq.querySelector('.sq-coord-file');
-    if(rlab2)rlab2.style.color=isDark?getLight():getDark();
-    if(flab2)flab2.style.color=isDark?getLight():getDark();
     if(lmv&&(idx===lmv.f||idx===lmv.t))sq.classList.add('lmv');
     if(idx===sel)sq.classList.add('sel');
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
