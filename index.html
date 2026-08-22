@@ -159,6 +159,10 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
+.sq-coord-rank{position:absolute;top:1px;left:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;opacity:.85}
+.sq-coord-file{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;opacity:.85}
+#h-ranks,#h-files,#p-ranks,#p-files{display:none}
+.ai-think-chip{display:none;width:fit-content;margin:0 auto 8px;padding:5px 14px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:20px;font-size:11px;font-weight:800;color:var(--accent2);text-align:center;white-space:nowrap}
 .sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.75);z-index:1;pointer-events:none}
 .sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(0,231,1,.85);z-index:1;pointer-events:none}
 .sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.28);z-index:1;pointer-events:none}
@@ -603,7 +607,8 @@ function _removeLoadBar(){
     </div>
     <div class="board-wrap">
       <div style="display:inline-flex;flex-direction:column;align-items:center">
-        <div style="display:flex;gap:8px;align-items:flex-start;padding-left:45px" id="homeBoardWrap">
+        <div class="ai-think-chip" id="hThinkBar">🤖 AI Thinking...</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;padding-left:0" id="homeBoardWrap">
           <div style="display:flex;flex-direction:column;width:20px" id="h-ranks"></div>
           <div>
             <div class="chessboard" id="hBoard"></div>
@@ -611,9 +616,6 @@ function _removeLoadBar(){
           </div>
         </div>
         <div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600;margin-top:8px" id="hSt">White to move</div>
-        <div id="hThinkBar" style="display:none;text-align:center;padding:8px 16px;margin-top:6px;background:rgba(26,154,239,.12);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:800;color:var(--accent2);width:100%">
-          🤖 AI Thinking... <span style="float:right;opacity:.5;cursor:pointer;font-weight:400" onclick="this.parentElement.style.display='none'">—</span>
-        </div>
         <div class="board-controls">
           <button class="btn btn-o btn-sm" onclick="resetHome()">New</button>
           <button class="btn btn-o btn-sm" onclick="undoHome()">Undo</button>
@@ -745,7 +747,7 @@ function _removeLoadBar(){
   <div class="play-layout">
     <div class="play-board-wrap">
       <div class="player-bar" id="oppBar"><span id="oppName">Opponent</span><span id="oppTimer">—</span></div>
-      <div id="aiThinkBar" style="display:none;text-align:center;padding:8px 16px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:800;color:var(--accent2)">🤖 AI Thinking...</div>
+      <div class="ai-think-chip" id="aiThinkBar">🤖 AI Thinking...</div>
       <div style="display:flex;gap:8px;align-items:flex-start">
         <div style="display:flex;flex-direction:column;width:20px" id="p-ranks"></div>
         <div>
@@ -1402,6 +1404,17 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     for(var vi=0;vi<64;vi++){
       var idx=flip?63-vi:vi;
       var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
+      var vr=Math.floor(vi/8),vc=vi%8;
+      if(vc===0){
+        var rlab=document.createElement('span');rlab.className='sq-coord-rank';
+        rlab.textContent=flip?(vr+1):(8-vr);
+        sq.appendChild(rlab);
+      }
+      if(vr===7){
+        var flab=document.createElement('span');flab.className='sq-coord-file';
+        flab.textContent=flip?'hgfedcba'[vc]:'abcdefgh'[vc];
+        sq.appendChild(flab);
+      }
       sq.addEventListener('click',function(e){
         var ii=parseInt(e.currentTarget.dataset.i);
         if(e.currentTarget.closest('#pBoard'))playClick(ii);else homeClick(ii);
@@ -1419,6 +1432,9 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     var isDark=(r+c)%2===0;
     sq.style.background=isDark?getDark():getLight();
     sq.className='sq';
+    var rlab2=sq.querySelector('.sq-coord-rank'),flab2=sq.querySelector('.sq-coord-file');
+    if(rlab2)rlab2.style.color=isDark?getLight():getDark();
+    if(flab2)flab2.style.color=isDark?getLight():getDark();
     if(lmv&&(idx===lmv.f||idx===lmv.t))sq.classList.add('lmv');
     if(idx===sel)sq.classList.add('sel');
     if(lm&&lm.includes(idx))sq.classList.add(brd[idx]?'lc':'lm');
@@ -1449,9 +1465,7 @@ function setCoords(rId,fId,flip,sqSz){
 }
 var hB=mkB(),hT='w',hSel=null,hLm=[],hLmv=null,hCr={wK:1,wQ:1,bK:1,bQ:1},hEp=null,hHist=[],hGO=false,hAI=true;
 function renderHome(){
-  renderBoard('hBoard',hB,hSel,hLm,hLmv,false);setCoords('h-ranks','h-files',false,60);
-  var wrap=document.getElementById('homeBoardWrap');
-  if(wrap){wrap.style.paddingLeft=window.innerWidth<=900?'0px':'45px';}
+  renderBoard('hBoard',hB,hSel,hLm,hLmv,false);
   var bw=document.querySelector('.board-wrap');if(bw){bw.style.alignItems='center';}
 }
 function homeCheckEnd(){var mv=allL(hT,hB,hEp,hCr),k=kng(hT,hB),inC=atk(k,Op(hT),hB,hEp,hCr);
@@ -1475,7 +1489,6 @@ function toggleAI(){hAI=!hAI;var btn=document.getElementById('aiBtn');if(btn)btn
 var pB=mkB(),pT='w',pSel=null,pLm=[],pLmv=null,pCr={wK:1,wQ:1,bK:1,bQ:1},pEp=null,pHist=[],pMH=[],pGO=false,pMode='ai',pColor='w';
 function renderPlay(){
   renderBoard('pBoard',pB,pSel,pLm,pLmv,pColor==='b');
-  setCoords('p-ranks','p-files',pColor==='b',55);
   var _b=pB.slice(),_ep=pEp,_cr=Object.assign({},pCr);
   setTimeout(function(){
     var board=document.getElementById('pBoard');if(!board)return;
