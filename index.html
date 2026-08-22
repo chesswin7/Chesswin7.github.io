@@ -90,7 +90,7 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .sb-icon{font-size:16px;width:20px;text-align:center}
 .page{display:none;padding:32px 10px}
 .page.active{display:block}
-.hero{min-height:calc(100vh - 60px);display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:60px 48px;direction:ltr}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:48px 48px;direction:ltr}
 .hero h1{font-size:48px;font-weight:900;line-height:1.1;margin-bottom:16px}
 .hero h1 span{color:var(--accent)}
 .hero p{font-size:16px;color:var(--muted);line-height:1.7;margin-bottom:32px}
@@ -159,6 +159,10 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
+.sq-coord-rank{position:absolute;top:1px;left:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.6)}
+.sq-coord-file{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.6)}
+#h-ranks,#h-files,#p-ranks,#p-files{display:none!important}
+.ai-think-chip{display:none;width:fit-content;margin:0 auto 8px;padding:5px 14px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:20px;font-size:11px;font-weight:800;color:var(--accent2);text-align:center;white-space:nowrap}
 .sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.75);z-index:1;pointer-events:none}
 .sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(0,231,1,.85);z-index:1;pointer-events:none}
 .sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.28);z-index:1;pointer-events:none}
@@ -310,6 +314,8 @@ header{padding:0 14px;gap:8px}
 .hero-btns .btn{width:100%;text-align:center;font-size:14px;padding:13px 20px;white-space:nowrap}
 .board-wrap{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .hero{justify-items:center}
+.hero>div{text-align:center;display:flex;flex-direction:column;align-items:center}
+.hero h1,.hero p{text-align:center}
 .board-wrap > div{display:flex;justify-content:center;align-items:flex-start;padding-left:0!important}
 .chessboard{grid-template-columns:repeat(8,min(10.2vw,44px))!important;grid-template-rows:repeat(8,min(10.2vw,44px))!important}
 .sq{width:min(10.2vw,44px)!important;height:min(10.2vw,44px)!important}
@@ -364,6 +370,9 @@ header{padding:0 14px;gap:8px}
 #navExposure span:first-child{display:none!important}
 #pBtn{width:28px!important;height:28px!important;font-size:13px!important}
 #promoBtn{display:none!important}
+#leaderboard{padding:32px 0!important}
+#leaderboard>div:first-child{padding:0 16px!important}
+#leaderboard #lbTitle{font-size:22px!important;margin-bottom:16px!important}
 }
 @media(max-width:480px){
 header{padding:0 8px}
@@ -372,9 +381,11 @@ header{padding:0 8px}
 #navBalance,#navExposure{padding:2px 5px!important;font-size:9px!important}
 .logo{font-size:14px}
 .hero h1{font-size:22px}
-.stats-bar{grid-template-columns:1fr}
-.stat-item{border-right:none;border-bottom:1px solid var(--border);padding:16px}
-.stat-item:last-child{border-bottom:none}
+.stats-bar{grid-template-columns:repeat(3,1fr)}
+.stat-item{border-right:1px solid var(--border);border-bottom:none;padding:14px 6px}
+.stat-item:last-child{border-right:none}
+.stat-val{font-size:18px}
+.stat-label{font-size:9px}
 .mini-row{grid-template-columns:1fr;gap:10px}
 .lb-head{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
 .lb-row{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
@@ -396,6 +407,9 @@ header{padding:0 8px}
 .profile-stats{grid-template-columns:repeat(3,1fr)}
 .cards-grid{grid-template-columns:1fr}
 .board-controls .btn{padding:5px 8px;font-size:10px}
+#leaderboard{padding:24px 0!important}
+#leaderboard>div:first-child{padding:0 12px!important}
+#leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 }
 </style></head>
 <body>
@@ -450,9 +464,9 @@ function _removeLoadBar(){
     <div class="sb-link" onclick="goPage('play');closeMobDrawer()"><span class="sb-icon">♟</span>Play</div>
     <div class="sb-link" onclick="scrollToId('arena');closeMobDrawer()"><span class="sb-icon">🏟</span>Arena</div>
     <div class="sb-link" onclick="goPage('promotions');closeMobDrawer()"><span class="sb-icon">🎁</span>Promotions</div>
-    <div style="padding:12px 16px;display:flex;gap:8px">
-      <button class="btn btn-o btn-sm" style="flex:1" onclick="openAuth('login');closeMobDrawer()">Login</button>
-      <button class="btn btn-sm" style="flex:1" onclick="openAuth('signup');closeMobDrawer()">Sign Up</button>
+    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-o" style="width:100%;padding:16px 20px;font-size:16px" onclick="openAuth('login');closeMobDrawer()">Login</button>
+      <button class="btn" style="width:100%;padding:16px 20px;font-size:16px" onclick="openAuth('signup');closeMobDrawer()">Sign Up</button>
     </div>
   </div>
   <div id="mobAuthLinks" style="display:none">
@@ -603,7 +617,8 @@ function _removeLoadBar(){
     </div>
     <div class="board-wrap">
       <div style="display:inline-flex;flex-direction:column;align-items:center">
-        <div style="display:flex;gap:8px;align-items:flex-start;padding-left:45px" id="homeBoardWrap">
+        <div class="ai-think-chip" id="hThinkBar">🤖 AI Thinking...</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;padding-left:0" id="homeBoardWrap">
           <div style="display:flex;flex-direction:column;width:20px" id="h-ranks"></div>
           <div>
             <div class="chessboard" id="hBoard"></div>
@@ -611,9 +626,6 @@ function _removeLoadBar(){
           </div>
         </div>
         <div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600;margin-top:8px" id="hSt">White to move</div>
-        <div id="hThinkBar" style="display:none;text-align:center;padding:8px 16px;margin-top:6px;background:rgba(26,154,239,.12);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:800;color:var(--accent2);width:100%">
-          🤖 AI Thinking... <span style="float:right;opacity:.5;cursor:pointer;font-weight:400" onclick="this.parentElement.style.display='none'">—</span>
-        </div>
         <div class="board-controls">
           <button class="btn btn-o btn-sm" onclick="resetHome()">New</button>
           <button class="btn btn-o btn-sm" onclick="undoHome()">Undo</button>
@@ -745,8 +757,8 @@ function _removeLoadBar(){
   <div class="play-layout">
     <div class="play-board-wrap">
       <div class="player-bar" id="oppBar"><span id="oppName">Opponent</span><span id="oppTimer">—</span></div>
-      <div id="aiThinkBar" style="display:none;text-align:center;padding:8px 16px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:var(--radius);font-size:13px;font-weight:800;color:var(--accent2)">🤖 AI Thinking...</div>
-      <div style="display:flex;gap:8px;align-items:flex-start">
+      <div class="ai-think-chip" id="aiThinkBar">🤖 AI Thinking...</div>
+      <div style="display:flex;gap:8px;align-items:flex-start;justify-content:center;width:100%">
         <div style="display:flex;flex-direction:column;width:20px" id="p-ranks"></div>
         <div>
           <div class="chessboard" id="pBoard" style="grid-template-columns:repeat(8,55px);grid-template-rows:repeat(8,55px)"></div>
@@ -1412,6 +1424,17 @@ function renderBoard(elId,brd,sel,lm,lmv,flip){
     for(var vi=0;vi<64;vi++){
       var idx=flip?63-vi:vi;
       var sq=document.createElement('div');sq.className='sq';sq.dataset.i=idx;
+      var vr=Math.floor(vi/8),vc=vi%8;
+      if(vc===0){
+        var rlab=document.createElement('span');rlab.className='sq-coord-rank';
+        rlab.textContent=flip?(vr+1):(8-vr);
+        sq.appendChild(rlab);
+      }
+      if(vr===7){
+        var flab=document.createElement('span');flab.className='sq-coord-file';
+        flab.textContent=flip?'hgfedcba'[vc]:'abcdefgh'[vc];
+        sq.appendChild(flab);
+      }
       sq.addEventListener('click',function(e){
         var ii=parseInt(e.currentTarget.dataset.i);
         if(e.currentTarget.closest('#pBoard'))playClick(ii);else homeClick(ii);
@@ -1459,9 +1482,7 @@ function setCoords(rId,fId,flip,sqSz){
 }
 var hB=mkB(),hT='w',hSel=null,hLm=[],hLmv=null,hCr={wK:1,wQ:1,bK:1,bQ:1},hEp=null,hHist=[],hGO=false,hAI=true;
 function renderHome(){
-  renderBoard('hBoard',hB,hSel,hLm,hLmv,false);setCoords('h-ranks','h-files',false,60);
-  var wrap=document.getElementById('homeBoardWrap');
-  if(wrap){wrap.style.paddingLeft=window.innerWidth<=900?'0px':'45px';}
+  renderBoard('hBoard',hB,hSel,hLm,hLmv,false);
   var bw=document.querySelector('.board-wrap');if(bw){bw.style.alignItems='center';}
 }
 function homeCheckEnd(){var mv=allL(hT,hB,hEp,hCr),k=kng(hT,hB),inC=atk(k,Op(hT),hB,hEp,hCr);
@@ -1485,7 +1506,6 @@ function toggleAI(){hAI=!hAI;var btn=document.getElementById('aiBtn');if(btn)btn
 var pB=mkB(),pT='w',pSel=null,pLm=[],pLmv=null,pCr={wK:1,wQ:1,bK:1,bQ:1},pEp=null,pHist=[],pMH=[],pGO=false,pMode='ai',pColor='w';
 function renderPlay(){
   renderBoard('pBoard',pB,pSel,pLm,pLmv,pColor==='b');
-  setCoords('p-ranks','p-files',pColor==='b',55);
   var _b=pB.slice(),_ep=pEp,_cr=Object.assign({},pCr);
   setTimeout(function(){
     var board=document.getElementById('pBoard');if(!board)return;
