@@ -397,22 +397,21 @@ header{padding:0 8px}
 #leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 .mini-row{grid-template-columns:repeat(2,1fr);gap:8px}
 .lb-wrap{overflow-x:hidden}
-.lb-head{grid-template-columns:26px 1fr 52px 40px 30px 54px;min-width:0}
-.lb-row{grid-template-columns:26px 1fr 52px 40px 30px 54px;min-width:0}
-.lb-head span{padding:8px 3px;font-size:9px;text-align:center}
-.lb-head span:nth-child(2){text-align:left;padding-left:6px}
-.lb-head span:last-child{text-align:right}
-.lb-row div{padding:0 3px;font-size:11px}
-.lb-row div:nth-child(2){padding-left:6px}
+.lb-head{grid-template-columns:26px minmax(0,80px) 40px 34px 24px minmax(44px,1fr);column-gap:6px;min-width:0}
+.lb-row{grid-template-columns:26px minmax(0,80px) 40px 34px 24px minmax(44px,1fr);column-gap:6px;min-width:0}
+.lb-head span{padding:8px 0;font-size:8px;text-align:center;overflow:hidden;text-overflow:clip;white-space:nowrap}
+.lb-head span:nth-child(2){text-align:left}
+.lb-head span:last-child{text-align:right;padding-right:6px}
+.lb-row div{padding:0;font-size:11px}
 .lb-row .rank{text-align:center;font-size:11px}
 .lb-row .wins{text-align:center}
-.lb-row .coins{font-size:10px}
+.lb-row .coins{font-size:10px;padding-right:6px}
 .lb-viewport{min-width:0}
 .rank-icon,.tier-icon{display:none}
 .rank-num::before{content:''}
 .coins-full{display:none}
 .coins-compact{display:inline}
-.tier-badge{min-width:0!important;padding:2px 6px!important;font-size:9px!important}
+.tier-badge{min-width:0!important;max-width:40px;padding:2px 4px!important;font-size:8px!important;overflow:hidden;text-overflow:ellipsis;display:inline-block!important}
 .chessboard{grid-template-columns:repeat(8,min(10.5vw,38px))!important;grid-template-rows:repeat(8,min(10.5vw,38px))!important}
 .sq{width:min(10.5vw,38px)!important;height:min(10.5vw,38px)!important}
 #h-ranks span{height:min(10.5vw,38px)!important;font-size:7px!important}
