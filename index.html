@@ -163,11 +163,6 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .sq-coord-file{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:800;line-height:1;pointer-events:none;z-index:2;color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.6)}
 #h-ranks,#h-files,#p-ranks,#p-files{display:none!important}
 .ai-think-chip{display:none;width:fit-content;margin:0 auto 8px;padding:5px 14px;background:rgba(26,154,239,.15);border:1px solid var(--accent2);border-radius:20px;font-size:11px;font-weight:800;color:var(--accent2);text-align:center;white-space:nowrap}
-.hdr-box{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;box-sizing:border-box;line-height:1;border:1px solid transparent;direction:ltr}
-.hdr-box.dep{background:rgba(0,231,1,.1);border-color:rgba(0,231,1,.3);color:var(--accent)}
-.hdr-box.wd{background:rgba(249,56,72,.08);border-color:rgba(249,56,72,.25);color:#f93848}
-.hdr-box.bal{background:rgba(0,231,1,.1);border-color:rgba(0,231,1,.3);color:var(--accent)}
-.hdr-box.exp{background:rgba(249,56,72,.08);border-color:rgba(249,56,72,.25);color:#f93848}
 .sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.75);z-index:1;pointer-events:none}
 .sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(0,231,1,.85);z-index:1;pointer-events:none}
 .sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.28);z-index:1;pointer-events:none}
@@ -323,6 +318,13 @@ header{padding:0 14px;gap:8px}
 .hero>div{text-align:center;display:flex;flex-direction:column;align-items:center}
 .hero h1,.hero p{text-align:center}
 .board-wrap > div{display:flex;justify-content:center;align-items:flex-start;padding-left:0!important}
+#hdrBoxGrid{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(2,auto);gap:4px 6px!important;align-items:stretch}
+#navBalance{order:1;background:rgba(0,231,1,.14)!important;border:1px solid rgba(0,231,1,.4)!important;border-radius:7px!important;justify-content:center!important;height:24px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
+#navDepBtn{order:2;background:rgba(0,231,1,.14)!important;color:var(--accent)!important;border:1px solid rgba(0,231,1,.4)!important;border-radius:7px!important;height:24px!important;padding:0 8px!important;font-size:10px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center}
+#navExposure{order:3;background:rgba(249,56,72,.1)!important;border:1px solid rgba(249,56,72,.3)!important;border-radius:7px!important;justify-content:center!important;height:24px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
+#navWdBtn{order:4;background:rgba(249,56,72,.1)!important;color:#f93848!important;border:1px solid rgba(249,56,72,.3)!important;border-radius:7px!important;height:24px!important;padding:0 8px!important;font-size:10px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center}
+#navBalance span:first-child,#navExposure span:first-child{display:none!important}
+#pBtn{width:26px!important;height:26px!important;font-size:12px!important}
 .chessboard{grid-template-columns:repeat(8,min(10.2vw,44px))!important;grid-template-rows:repeat(8,min(10.2vw,44px))!important}
 .sq{width:min(10.2vw,44px)!important;height:min(10.2vw,44px)!important}
 #h-ranks span{height:min(10.2vw,44px)!important;font-size:8px!important}
@@ -357,8 +359,8 @@ header{padding:0 14px;gap:8px}
 .finance-form{padding:18px 14px}
 .balance-box{flex-direction:column;align-items:flex-start;gap:6px}
 .theme-grid{grid-template-columns:repeat(2,1fr);gap:10px}
-.theme-card{padding:14px}
-.theme-name{font-size:13px}
+.theme-card{padding:10px}
+.theme-name{font-size:12px}
 .promo-page{padding:16px 10px}
 .promo-grid{grid-template-columns:1fr;gap:12px}
 .promo-item.wide{grid-column:1}
@@ -369,42 +371,42 @@ header{padding:0 14px;gap:8px}
 #supportModal .modal-box{width:94vw}
 .sidebar{display:none!important}
 #headerRight .btn{padding:4px 8px!important;font-size:10px!important}
-#headerRight > div{gap:6px!important}
-.hdr-box{height:26px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
+#headerRight > div{gap:4px!important}
+#navBalance{padding:3px 8px!important;font-size:10px!important}
+#navBalance span:first-child{display:none!important}
+#navExposure{padding:3px 6px!important;font-size:10px!important}
+#navExposure span:first-child{display:none!important}
 #pBtn{width:28px!important;height:28px!important;font-size:13px!important}
 #promoBtn{display:none!important}
-#leaderboard{padding:32px 0!important}
-#leaderboard>div:first-child{padding:0 16px!important}
-#leaderboard #lbTitle{font-size:22px!important;margin-bottom:16px!important}
 }
 @media(max-width:480px){
 header{padding:0 8px}
-#headerRight > div{gap:4px!important}
 #headerRight .btn{padding:3px 6px!important;font-size:9px!important}
-.hdr-box{height:24px!important;padding:0 6px!important;font-size:9px!important;gap:2px!important}
+#hdrBoxGrid{gap:3px 5px!important}
+#navBalance,#navDepBtn,#navExposure,#navWdBtn{height:22px!important;padding:0 6px!important;font-size:9px!important}
+#pBtn{width:24px!important;height:24px!important;font-size:11px!important}
 .logo{font-size:14px}
 .hero h1{font-size:22px}
 .stats-bar{grid-template-columns:repeat(3,1fr)}
 .stat-item{border-right:1px solid var(--border);border-bottom:none;padding:14px 6px}
 .stat-val{font-size:18px}
 .stat-label{font-size:9px}
-#leaderboard{padding:24px 0!important}
-#leaderboard>div:first-child{padding:0 12px!important}
-#leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 .mini-row{grid-template-columns:repeat(2,1fr);gap:8px}
-.lb-wrap{overflow-x:hidden}
 .lb-head{grid-template-columns:26px 1fr 50px 40px 32px 50px;min-width:0}
 .lb-row{grid-template-columns:26px 1fr 50px 40px 32px 50px;min-width:0}
-.lb-head span{padding:8px 4px;font-size:9px}
-.lb-row div{padding:0 4px;font-size:10px}
 .lb-viewport{min-width:0}
+.lb-wrap{overflow-x:hidden}
 .tier-badge{min-width:0!important;padding:2px 4px!important;font-size:9px!important}
 .chessboard{grid-template-columns:repeat(8,min(10.5vw,38px))!important;grid-template-rows:repeat(8,min(10.5vw,38px))!important}
 .sq{width:min(10.5vw,38px)!important;height:min(10.5vw,38px)!important}
+#h-ranks span{height:min(10.5vw,38px)!important;font-size:7px!important}
+#h-files span{width:min(10.5vw,38px)!important;font-size:7px!important}
 #pBoard{grid-template-columns:repeat(8,min(10.5vw,38px))!important;grid-template-rows:repeat(8,min(10.5vw,38px))!important}
+#p-ranks span{height:min(10.5vw,38px)!important;font-size:7px!important}
+#p-files span{width:min(10.5vw,38px)!important;font-size:7px!important}
 .theme-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-.theme-card{padding:10px}
-.theme-name{font-size:12px;margin-top:2px}
+.theme-card{padding:6px}
+.theme-name{font-size:10px;margin-top:2px}
 .home-lang-grid{grid-template-columns:repeat(2,1fr);gap:8px}
 .home-lang-btn{padding:8px 10px}
 .home-lang-btn .lname{font-size:12px}
@@ -1962,17 +1964,19 @@ function buildNavbarAuth(data){
   var hRight=document.getElementById('headerRight');if(!hRight)return;
   var coins=(data&&data.coins)||0;
   hRight.innerHTML=
-    '<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap">'+
-    '<div id="navBalance" class="hdr-box bal" onclick="goPage(\'profile\')" title="Available Balance">'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap" id="hdrRightRow">'+
+    '<div id="hdrBoxGrid" style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">'+
+    '<button id="navDepBtn" class="btn btn-sm" style="background:#00e701;color:#000;font-weight:800" onclick="goPage(\'deposit\')">💰 Deposit</button>'+
+    '<button id="navWdBtn" class="btn btn-sm btn-o" style="font-weight:800" onclick="goPage(\'withdrawal\')">💸 Withdraw</button>'+
+    '<div id="navBalance" style="background:rgba(0,231,1,.1);border:1px solid rgba(0,231,1,.3);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;direction:ltr" onclick="goPage(\'profile\')" title="Available Balance">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:600">BAL</span>'+
       '<span>🪙</span><span id="navCoins">'+coins.toLocaleString()+'</span>'+
     '</div>'+
-    '<div id="navExposure" class="hdr-box exp" onclick="goPage(\'withdrawal\')" title="Exposure (locked funds)">'+
+    '<div id="navExposure" style="background:rgba(249,56,72,.08);border:1px solid rgba(249,56,72,.25);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;color:#f93848;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;direction:ltr" onclick="goPage(\'withdrawal\')" title="Exposure (locked funds)">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:600">EXP</span>'+
       '<span>⚡</span><span id="navExp">0</span>'+
     '</div>'+
-    '<div class="hdr-box dep" onclick="goPage(\'deposit\')">💰 Deposit</div>'+
-    '<div class="hdr-box wd" onclick="goPage(\'withdrawal\')">💸 Withdraw</div>'+
+    '</div>'+
     '<div class="profile-btn" onclick="toggleDrop()" id="pBtn" style="position:relative">👤'+
       '<div class="profile-drop" id="pDrop">'+
         '<div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)">'+
