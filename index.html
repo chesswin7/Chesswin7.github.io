@@ -354,6 +354,8 @@ header{padding:0 14px;gap:8px}
 .theme-grid{grid-template-columns:repeat(2,1fr);gap:10px}
 .theme-card{padding:14px}
 .theme-name{font-size:13px}
+.theme-card{padding:10px}
+.theme-name{font-size:12px}
 .promo-page{padding:16px 10px}
 .promo-grid{grid-template-columns:1fr;gap:12px}
 .promo-item.wide{grid-column:1}
@@ -363,12 +365,10 @@ header{padding:0 14px;gap:8px}
 #legalModal .modal-box{width:94vw}
 #supportModal .modal-box{width:94vw}
 .sidebar{display:none!important}
-#headerRight .btn{padding:4px 8px!important;font-size:10px!important}
-#headerRight > div{gap:4px!important}
-#navBalance{padding:3px 8px!important;font-size:10px!important}
-#navBalance span:first-child{display:none!important}
-#navExposure{padding:3px 6px!important;font-size:10px!important}
-#navExposure span:first-child{display:none!important}
+#headerRight .btn{padding:4px 10px!important;font-size:10px!important}
+#headerRight > div{gap:8px!important}
+.nav-lbl{display:none!important}
+#navBalance,#navExposure{font-size:10px!important}
 #pBtn{width:28px!important;height:28px!important;font-size:13px!important}
 #promoBtn{display:none!important}
 #leaderboard{padding:32px 0!important}
@@ -377,9 +377,9 @@ header{padding:0 14px;gap:8px}
 }
 @media(max-width:480px){
 header{padding:0 8px}
-#headerRight > div{gap:3px!important}
-#headerRight .btn{padding:3px 6px!important;font-size:9px!important}
-#navBalance,#navExposure{padding:2px 5px!important;font-size:9px!important}
+#headerRight > div{gap:6px!important}
+#headerRight .btn{padding:3px 8px!important;font-size:9px!important}
+#navBalance,#navExposure{font-size:9px!important}
 .logo{font-size:14px}
 .hero h1{font-size:22px}
 .stats-bar{grid-template-columns:repeat(3,1fr)}
@@ -389,7 +389,6 @@ header{padding:0 8px}
 #leaderboard{padding:24px 0!important}
 #leaderboard>div:first-child{padding:0 12px!important}
 #leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
-.stat-item:last-child{border-bottom:none}
 .mini-row{grid-template-columns:repeat(2,1fr);gap:8px}
 .lb-head{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
 .lb-row{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
@@ -1484,6 +1483,8 @@ function setCoords(rId,fId,flip,sqSz){
 var hB=mkB(),hT='w',hSel=null,hLm=[],hLmv=null,hCr={wK:1,wQ:1,bK:1,bQ:1},hEp=null,hHist=[],hGO=false,hAI=true;
 function renderHome(){
   renderBoard('hBoard',hB,hSel,hLm,hLmv,false);
+  var wrap=document.getElementById('homeBoardWrap');
+  if(wrap){wrap.style.paddingLeft=window.innerWidth<=900?'0px':'45px';}
   var bw=document.querySelector('.board-wrap');if(bw){bw.style.alignItems='center';}
 }
 function homeCheckEnd(){var mv=allL(hT,hB,hEp,hCr),k=kng(hT,hB),inC=atk(k,Op(hT),hB,hEp,hCr);
@@ -1959,16 +1960,20 @@ function buildNavbarAuth(data){
   var hRight=document.getElementById('headerRight');if(!hRight)return;
   var coins=(data&&data.coins)||0;
   hRight.innerHTML=
-    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">'+
-    '<button class="btn btn-sm" style="background:#00e701;color:#000;font-weight:800" onclick="goPage(\'deposit\')">💰 Deposit</button>'+
-    '<button class="btn btn-sm btn-o" style="font-weight:800" onclick="goPage(\'withdrawal\')">💸 Withdraw</button>'+
-    '<div id="navBalance" style="background:rgba(0,231,1,.1);border:1px solid rgba(0,231,1,.3);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;direction:ltr" onclick="goPage(\'profile\')" title="Available Balance">'+
-      '<span style="font-size:10px;color:var(--muted);font-weight:600">BAL</span>'+
-      '<span>🪙</span><span id="navCoins">'+coins.toLocaleString()+'</span>'+
+    '<div style="display:flex;align-items:center;gap:10px">'+
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
+      '<div id="navBalance" style="font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:4px;direction:ltr" onclick="goPage(\'profile\')" title="Available Balance">'+
+        '<span class="nav-lbl" style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Coins</span>'+
+        '<span>🪙</span><span id="navCoins">'+coins.toLocaleString()+'</span>'+
+      '</div>'+
+      '<button class="btn btn-sm" style="background:#00e701;color:#000;font-weight:800;padding:4px 14px;font-size:11px" onclick="goPage(\'deposit\')">Deposit</button>'+
     '</div>'+
-    '<div id="navExposure" style="background:rgba(249,56,72,.08);border:1px solid rgba(249,56,72,.25);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;color:#f93848;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;direction:ltr" onclick="goPage(\'withdrawal\')" title="Exposure (locked funds)">'+
-      '<span style="font-size:10px;color:var(--muted);font-weight:600">EXP</span>'+
-      '<span>⚡</span><span id="navExp">0</span>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
+      '<div id="navExposure" style="font-size:11px;font-weight:800;color:#f93848;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:4px;direction:ltr" onclick="goPage(\'withdrawal\')" title="Exposure (locked funds)">'+
+        '<span class="nav-lbl" style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Exposure</span>'+
+        '<span>⚡</span><span id="navExp">0</span>'+
+      '</div>'+
+      '<button class="btn btn-sm btn-o" style="font-weight:800;padding:4px 14px;font-size:11px" onclick="goPage(\'withdrawal\')">Withdraw</button>'+
     '</div>'+
     '<div class="profile-btn" onclick="toggleDrop()" id="pBtn" style="position:relative">👤'+
       '<div class="profile-drop" id="pDrop">'+
