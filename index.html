@@ -309,9 +309,10 @@ header{padding:0 14px;gap:8px}
 .page{padding:16px 12px}
 .hero{grid-template-columns:1fr;padding:24px 16px;gap:24px;min-height:auto}
 .hero h1{font-size:28px}
+.hero h1 br{display:none}
 .hero p{font-size:14px;margin-bottom:20px}
-.hero-btns{display:flex;flex-direction:column;gap:10px;width:100%}
-.hero-btns .btn{width:100%;text-align:center;font-size:14px;padding:13px 20px;white-space:nowrap}
+.hero-btns{display:flex;flex-direction:row;gap:8px;width:100%}
+.hero-btns .btn{width:100%;flex:1;text-align:center;font-size:13px;padding:12px 8px;white-space:nowrap}
 .board-wrap{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .hero{justify-items:center}
 .hero>div{text-align:center;display:flex;flex-direction:column;align-items:center}
@@ -369,10 +370,10 @@ header{padding:0 14px;gap:8px}
 #navExposure{padding:3px 6px!important;font-size:10px!important}
 #navExposure span:first-child{display:none!important}
 #pBtn{width:28px!important;height:28px!important;font-size:13px!important}
-#promoBtn{display:none!important}
 #leaderboard{padding:32px 0!important}
 #leaderboard>div:first-child{padding:0 16px!important}
 #leaderboard #lbTitle{font-size:22px!important;margin-bottom:16px!important}
+#promoBtn{display:none!important}
 }
 @media(max-width:480px){
 header{padding:0 8px}
@@ -386,6 +387,9 @@ header{padding:0 8px}
 .stat-item:last-child{border-right:none}
 .stat-val{font-size:18px}
 .stat-label{font-size:9px}
+#leaderboard{padding:24px 0!important}
+#leaderboard>div:first-child{padding:0 12px!important}
+#leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 .mini-row{grid-template-columns:1fr;gap:10px}
 .lb-head{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
 .lb-row{grid-template-columns:36px 90px 80px 56px 44px 66px;min-width:372px}
@@ -407,9 +411,6 @@ header{padding:0 8px}
 .profile-stats{grid-template-columns:repeat(3,1fr)}
 .cards-grid{grid-template-columns:1fr}
 .board-controls .btn{padding:5px 8px;font-size:10px}
-#leaderboard{padding:24px 0!important}
-#leaderboard>div:first-child{padding:0 12px!important}
-#leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 }
 </style></head>
 <body>
