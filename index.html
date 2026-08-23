@@ -141,6 +141,8 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .lb-row:hover{background:var(--surface2)}
 .lb-row div{padding:0 16px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lb-row .rank{color:var(--muted);font-weight:700}
+.rank-num::before{content:'#'}
+.coins-compact{display:none}
 .lb-row .coins{color:var(--accent);text-align:right}
 .lb-row .rating{color:var(--accent2)}
 .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;direction:ltr}
@@ -318,13 +320,8 @@ header{padding:0 14px;gap:8px}
 .hero>div{text-align:center;display:flex;flex-direction:column;align-items:center}
 .hero h1,.hero p{text-align:center}
 .board-wrap > div{display:flex;justify-content:center;align-items:flex-start;padding-left:0!important}
-#hdrBoxGrid{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(2,auto);gap:4px 6px!important;align-items:stretch}
-#navBalance{order:1;background:rgba(0,231,1,.14)!important;border:1px solid rgba(0,231,1,.4)!important;border-radius:7px!important;justify-content:center!important;height:24px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
-#navDepBtn{order:2;background:rgba(0,231,1,.14)!important;color:var(--accent)!important;border:1px solid rgba(0,231,1,.4)!important;border-radius:7px!important;height:24px!important;padding:0 8px!important;font-size:10px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center}
-#navExposure{order:3;background:rgba(249,56,72,.1)!important;border:1px solid rgba(249,56,72,.3)!important;border-radius:7px!important;justify-content:center!important;height:24px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
-#navWdBtn{order:4;background:rgba(249,56,72,.1)!important;color:#f93848!important;border:1px solid rgba(249,56,72,.3)!important;border-radius:7px!important;height:24px!important;padding:0 8px!important;font-size:10px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center}
-#navBalance span:first-child,#navExposure span:first-child{display:none!important}
-#pBtn{width:26px!important;height:26px!important;font-size:12px!important}
+.wallet-main-row{flex-direction:column;align-items:center!important}
+.wallet-qr-side{border-left:none!important;border-top:1px solid var(--border);padding-left:0!important;padding-top:12px!important;width:100%}
 .chessboard{grid-template-columns:repeat(8,min(10.2vw,44px))!important;grid-template-rows:repeat(8,min(10.2vw,44px))!important}
 .sq{width:min(10.2vw,44px)!important;height:min(10.2vw,44px)!important}
 #h-ranks span{height:min(10.2vw,44px)!important;font-size:8px!important}
@@ -371,17 +368,21 @@ header{padding:0 14px;gap:8px}
 #supportModal .modal-box{width:94vw}
 .sidebar{display:none!important}
 #headerRight .btn{padding:4px 8px!important;font-size:10px!important}
-#headerRight > div{gap:4px!important}
-#navBalance{padding:3px 8px!important;font-size:10px!important}
-#navBalance span:first-child{display:none!important}
-#navExposure{padding:3px 6px!important;font-size:10px!important}
-#navExposure span:first-child{display:none!important}
-#pBtn{width:28px!important;height:28px!important;font-size:13px!important}
+#headerRight > div{gap:6px!important}
+#hdrBoxGrid{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(2,auto);gap:4px 6px!important;align-items:stretch}
+#navBalance{order:1;background:rgba(0,231,1,.14)!important;border:1px solid rgba(0,231,1,.4)!important;border-radius:7px!important;justify-content:center!important;height:24px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
+#navDepBtn{order:2;background:rgba(0,231,1,.14)!important;color:var(--accent)!important;border:1px solid rgba(0,231,1,.4)!important;border-radius:7px!important;height:24px!important;padding:0 8px!important;font-size:10px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center}
+#navExposure{order:3;background:rgba(249,56,72,.1)!important;border:1px solid rgba(249,56,72,.3)!important;border-radius:7px!important;justify-content:center!important;height:24px!important;padding:0 8px!important;font-size:10px!important;gap:3px!important}
+#navWdBtn{order:4;background:rgba(249,56,72,.1)!important;color:#f93848!important;border:1px solid rgba(249,56,72,.3)!important;border-radius:7px!important;height:24px!important;padding:0 8px!important;font-size:10px!important;font-weight:800!important;display:flex;align-items:center;justify-content:center}
+#navBalance span:first-child,#navExposure span:first-child{display:none!important}
+#pBtn{width:26px!important;height:26px!important;font-size:12px!important}
 #promoBtn{display:none!important}
+#leaderboard{padding:32px 0!important}
+#leaderboard>div:first-child{padding:0 16px!important}
+#leaderboard #lbTitle{font-size:22px!important;margin-bottom:16px!important}
 }
 @media(max-width:480px){
 header{padding:0 8px}
-#headerRight .btn{padding:3px 6px!important;font-size:9px!important}
 #hdrBoxGrid{gap:3px 5px!important}
 #navBalance,#navDepBtn,#navExposure,#navWdBtn{height:22px!important;padding:0 6px!important;font-size:9px!important}
 #pBtn{width:24px!important;height:24px!important;font-size:11px!important}
@@ -391,12 +392,27 @@ header{padding:0 8px}
 .stat-item{border-right:1px solid var(--border);border-bottom:none;padding:14px 6px}
 .stat-val{font-size:18px}
 .stat-label{font-size:9px}
+#leaderboard{padding:24px 0!important}
+#leaderboard>div:first-child{padding:0 12px!important}
+#leaderboard #lbTitle{font-size:19px!important;margin-bottom:12px!important}
 .mini-row{grid-template-columns:repeat(2,1fr);gap:8px}
-.lb-head{grid-template-columns:26px 1fr 50px 40px 32px 50px;min-width:0}
-.lb-row{grid-template-columns:26px 1fr 50px 40px 32px 50px;min-width:0}
-.lb-viewport{min-width:0}
 .lb-wrap{overflow-x:hidden}
-.tier-badge{min-width:0!important;padding:2px 4px!important;font-size:9px!important}
+.lb-head{grid-template-columns:26px 1fr 52px 40px 30px 54px;min-width:0}
+.lb-row{grid-template-columns:26px 1fr 52px 40px 30px 54px;min-width:0}
+.lb-head span{padding:8px 3px;font-size:9px;text-align:center}
+.lb-head span:nth-child(2){text-align:left;padding-left:6px}
+.lb-head span:last-child{text-align:right}
+.lb-row div{padding:0 3px;font-size:11px}
+.lb-row div:nth-child(2){padding-left:6px}
+.lb-row .rank{text-align:center;font-size:11px}
+.lb-row .wins{text-align:center}
+.lb-row .coins{font-size:10px}
+.lb-viewport{min-width:0}
+.rank-icon,.tier-icon{display:none}
+.rank-num::before{content:''}
+.coins-full{display:none}
+.coins-compact{display:inline}
+.tier-badge{min-width:0!important;padding:2px 6px!important;font-size:9px!important}
 .chessboard{grid-template-columns:repeat(8,min(10.5vw,38px))!important;grid-template-rows:repeat(8,min(10.5vw,38px))!important}
 .sq{width:min(10.5vw,38px)!important;height:min(10.5vw,38px)!important}
 #h-ranks span{height:min(10.5vw,38px)!important;font-size:7px!important}
@@ -1634,6 +1650,12 @@ function getTier(r){
   return TIERS[0];
 }
 var lbY=0,lbRaf=null;
+function fmtCompactCoins(n){
+  n=n||0;
+  if(n>=1000000)return (Math.round(n/100000)/10)+'M';
+  if(n>=1000)return (Math.round(n/100)/10)+'K';
+  return String(n);
+}
 function buildLB(players){
   if(lbRaf){cancelAnimationFrame(lbRaf);lbRaf=null;}
   var vp=document.getElementById('lbViewport');if(!vp)return;
@@ -1644,13 +1666,22 @@ function buildLB(players){
     var t=getTier(p.r||p.rating||0);
     var isCU=window.currentUser&&p.uid===window.currentUser.uid;
     if(isCU)row.style.background='rgba(0,231,1,.07)';
-    var rankDiv=document.createElement('div');rankDiv.className='rank';rankDiv.textContent=(icons[rank]||'·')+' #'+(rank+1);
+    var rankDiv=document.createElement('div');rankDiv.className='rank';
+    var rankIcon=makeSafeEl('span','rank-icon',(icons[rank]||'·')+' ');rankDiv.appendChild(rankIcon);
+    var rankNum=makeSafeEl('span','rank-num',String(rank+1));rankDiv.appendChild(rankNum);
     var nameDiv=document.createElement('div');nameDiv.style.fontWeight='700';nameDiv.textContent=safeText(p.u||p.username||'?');
     if(isCU){var you=makeSafeEl('small',null,' (you)');you.style.color='var(--muted)';nameDiv.appendChild(you);}
-    var tierDiv=document.createElement('div');var tb=makeSafeEl('span','tier-badge',t.i+' '+t.n);tierDiv.appendChild(tb);
+    var tierDiv=document.createElement('div');var tb=document.createElement('span');tb.className='tier-badge';
+    var tbIcon=makeSafeEl('span','tier-icon',t.i+' ');tb.appendChild(tbIcon);
+    tb.appendChild(document.createTextNode(t.n));
+    tierDiv.appendChild(tb);
     var ratingDiv=document.createElement('div');ratingDiv.className='rating';ratingDiv.textContent=safeText(p.r||p.rating||0);
-    var winsDiv=document.createElement('div');winsDiv.textContent=safeText(p.w||p.wins||0);
-    var coinsDiv=document.createElement('div');coinsDiv.className='coins';coinsDiv.style.textAlign='right';coinsDiv.textContent='🪙 '+((p.c||p.coins||0)).toLocaleString();
+    var winsDiv=document.createElement('div');winsDiv.className='wins';winsDiv.textContent=safeText(p.w||p.wins||0);
+    var coinsDiv=document.createElement('div');coinsDiv.className='coins';coinsDiv.style.textAlign='right';
+    var coinsVal=(p.c||p.coins||0);
+    coinsDiv.appendChild(document.createTextNode('🪙'));
+    var coinsFull=makeSafeEl('span','coins-full',' '+coinsVal.toLocaleString());coinsDiv.appendChild(coinsFull);
+    var coinsCompact=makeSafeEl('span','coins-compact',fmtCompactCoins(coinsVal));coinsDiv.appendChild(coinsCompact);
     row.appendChild(rankDiv);row.appendChild(nameDiv);row.appendChild(tierDiv);row.appendChild(ratingDiv);row.appendChild(winsDiv);row.appendChild(coinsDiv);
     return row;}
   vp.innerHTML='';
@@ -2158,8 +2189,8 @@ function loadPlatformWallets(){
     var hdr=document.createElement('p');hdr.style.cssText='font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px';hdr.textContent='📋 Send crypto to one of these wallets:';c2.appendChild(hdr);
     wallets.forEach(function(w){
       var color=w.color||'#26a17b';var emoji=w.emoji||'💵';
-      var wDiv=document.createElement('div');wDiv.style.cssText='background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:20px 24px;margin-bottom:12px';
-      var mainRow=document.createElement('div');mainRow.style.cssText='display:flex;gap:16px;align-items:flex-start';
+      var wDiv=document.createElement('div');wDiv.className='wallet-card';wDiv.style.cssText='background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:20px 24px;margin-bottom:12px';
+      var mainRow=document.createElement('div');mainRow.className='wallet-main-row';mainRow.style.cssText='display:flex;gap:16px;align-items:flex-start';
       var leftSide=document.createElement('div');leftSide.style.cssText='flex:1;min-width:0';
       var coinRow=document.createElement('div');coinRow.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:10px';
       var badge=document.createElement('div');badge.style.cssText='width:36px;height:36px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;font-weight:900';badge.textContent=emoji;
@@ -2172,7 +2203,7 @@ function loadPlatformWallets(){
       var addrBox=document.createElement('div');addrBox.style.cssText='font-size:12px;font-family:monospace;color:var(--text);word-break:break-all;background:var(--surface2);padding:8px 12px;border-radius:6px;border:1px solid var(--border);flex:1';addrBox.textContent=w.address;
       var copyBtn=document.createElement('button');copyBtn.textContent='📋 Copy';copyBtn.style.cssText='background:'+color+';border:none;color:#fff;padding:7px 14px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:700;font-family:Inter,sans-serif;white-space:nowrap;flex-shrink:0';copyBtn.onclick=function(){copyWallet(w.address);};
       addrWrap.appendChild(addrBox);addrWrap.appendChild(copyBtn);leftSide.appendChild(addrLabel);leftSide.appendChild(addrWrap);mainRow.appendChild(leftSide);
-      if(w.qr){var qrSide=document.createElement('div');qrSide.style.cssText='flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding-left:16px;border-left:1px solid var(--border)';var qrImg=document.createElement('img');qrImg.src=w.qr;qrImg.style.cssText='width:100%;height:200px;object-fit:contain;border-radius:10px;background:#fff;padding:8px;border:2px solid var(--border2)';qrImg.alt='QR Code';var qrTxt=document.createElement('div');qrTxt.style.cssText='font-size:10px;color:var(--muted);font-weight:600;text-align:center';qrTxt.textContent='Scan to get address';qrSide.appendChild(qrImg);qrSide.appendChild(qrTxt);mainRow.appendChild(qrSide);}
+      if(w.qr){var qrSide=document.createElement('div');qrSide.className='wallet-qr-side';qrSide.style.cssText='flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding-left:16px;border-left:1px solid var(--border)';var qrImg=document.createElement('img');qrImg.src=w.qr;qrImg.className='wallet-qr-img';qrImg.style.cssText='width:150px;height:150px;object-fit:contain;border-radius:10px;background:#fff;padding:8px;border:2px solid var(--border2)';qrImg.alt='QR Code';var qrTxt=document.createElement('div');qrTxt.style.cssText='font-size:10px;color:var(--muted);font-weight:600;text-align:center';qrTxt.textContent='Scan to get address';qrSide.appendChild(qrImg);qrSide.appendChild(qrTxt);mainRow.appendChild(qrSide);}
       wDiv.appendChild(mainRow);c2.appendChild(wDiv);
     });
   };
