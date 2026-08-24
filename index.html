@@ -48,7 +48,7 @@ const rtdb = firebase.database();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
 </script>
 <style>
-:root{--bg:#0f212e;--surface:#1a2c38;--surface2:#213743;--surface3:#2d4a5a;--accent:#00e701;--accent2:#1a9aef;--text:#ffffff;--muted:#b1bad3;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--red:#f93848;--green:#00e701;--radius:8px}
+:root{--bg:#0f212e;--surface:#1a2c38;--surface2:#213743;--surface3:#2d4a5a;--accent:#00e701;--accent2:#1a9aef;--text:#ffffff;--muted:#b1bad3;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--red:#f93848;--green:#00e701;--radius:8px;--hl-rgb:0,231,1}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;font-weight:500;overflow-x:hidden}
 header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;direction:ltr}
@@ -160,11 +160,11 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .section h2{font-size:32px;font-weight:900;margin-bottom:32px}
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
-.sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative}
-.sq.lm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,231,1,.75);z-index:1;pointer-events:none}
-.sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(0,231,1,.85);z-index:1;pointer-events:none}
-.sq.sel::before{content:'';position:absolute;inset:0;background:rgba(0,231,1,.28);z-index:1;pointer-events:none}
-.sq.lmv::before{content:'';position:absolute;inset:0;background:rgba(255,183,3,.22);z-index:1;pointer-events:none}
+.sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative;overflow:hidden}
+.sq.lm::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30%;height:30%;border-radius:50%;background:rgba(var(--hl-rgb),.75);z-index:1;pointer-events:none}
+.sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(var(--hl-rgb),.85);z-index:1;pointer-events:none}
+.sq.sel::before{content:'';position:absolute;inset:0;background:rgba(var(--hl-rgb),.28);z-index:1;pointer-events:none}
+.sq.lmv::before{content:'';position:absolute;inset:0;background:rgba(var(--hl-rgb),.22);z-index:1;pointer-events:none}
 .sq:hover{filter:brightness(1.3)}
 .piece{pointer-events:none;user-select:none;line-height:1}
 .sq-coord-rank{position:absolute;top:2px;left:3px;font-size:9px;font-weight:700;color:#fff;opacity:.75;pointer-events:none;z-index:2;line-height:1}
@@ -324,9 +324,10 @@ header{padding:0 14px;gap:8px}
 #h-ranks span{height:min(10.2vw,44px)!important;font-size:8px!important}
 #h-files span{width:min(10.2vw,44px)!important;font-size:8px!important}
 #h-ranks{width:13px!important;flex-shrink:0}
-.stats-bar{grid-template-columns:repeat(3,1fr)}
+.stats-bar{grid-template-columns:1fr}
 .stat-val{font-size:24px}
-.stat-item{padding:20px 10px}
+.stat-item{padding:16px;border-right:none;border-bottom:1px solid var(--border)}
+.stat-item:last-child{border-bottom:none}
 .mini-boards-section{padding:24px 0}
 .mini-boards-inner{padding:0 12px}
 .mini-row{grid-template-columns:repeat(2,1fr);gap:10px}
@@ -655,7 +656,7 @@ function _removeLoadBar(){
     <div>
       <p id="heroTag" style="font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">♛ ChessWin7 — Skill Based Arena</p>
       <h1 id="heroH1">Play Chess. <br><span>Earn Real</span> <br>Rewards.</h1>
-      <p id="heroSubtitle">Challenge real players worldwide, climb the leaderboard, and win USDT with every victory. 1 COIN = 1 USDT.</p>
+      <p id="heroSubtitle">Challenge the World. Beat the King. Become the King.</p>
       <div class="hero-btns">
         <button id="heroBtn1" class="btn" style="font-size:14px;padding:13px 28px" onclick="openAuth('signup')">▶ Play Now</button>
         <button id="heroBtn2" class="btn btn-o" style="font-size:14px;padding:13px 28px" onclick="scrollToId('leaderboard')">View Rankings</button>
@@ -1779,7 +1780,21 @@ function buildThemePicker(){
     for(var r=0;r<8;r++){for(var c=0;c<8;c++){var idx=r*8+c;var sq=document.createElement('div');sq.className='theme-sq';sq.style.background=((r+c)%2===0)?th.dark:th.light;var piece=PIECE_LAYOUT[idx];var col=PIECE_COLORS[idx];if(piece&&col){var img=document.createElement('img');img.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+col+piece.toLowerCase()+'.png';img.style.cssText='width:100%;height:100%;object-fit:contain;display:block;pointer-events:none';sq.appendChild(img);}preview.appendChild(sq);}}
     var name=makeSafeEl('div','theme-name',th.name);card.appendChild(preview);card.appendChild(name);grid.appendChild(card);});
 }
-function applyTheme(i){activeTheme=i;document.querySelectorAll('.theme-card').forEach(function(c){c.classList.remove('active');});var tc=document.getElementById('tc-'+i);if(tc)tc.classList.add('active');var at=document.getElementById('activetheme');if(at)at.textContent=THEMES[i].name;renderHome();renderPlay();toast('Theme: '+THEMES[i].name,'ok');}
+function hex2rgbStr(hex){
+  hex=(hex||'#00e701').replace('#','');
+  if(hex.length===3)hex=hex.split('').map(function(c){return c+c;}).join('');
+  var num=parseInt(hex,16);
+  return (num>>16&255)+','+(num>>8&255)+','+(num&255);
+}
+function updateHighlightTheme(i){
+  // square-highlight colors (selected / last-move / legal-move dot / capture ring)
+  // follow the active board theme's light-square color, except the default
+  // Classic Blue theme (index 0) which keeps the brand green — matches the
+  // colors players already know, changing only when they actually pick a theme.
+  var rgb=(i===0)?'0,231,1':hex2rgbStr(THEMES[i].light);
+  document.documentElement.style.setProperty('--hl-rgb',rgb);
+}
+function applyTheme(i){activeTheme=i;document.querySelectorAll('.theme-card').forEach(function(c){c.classList.remove('active');});var tc=document.getElementById('tc-'+i);if(tc)tc.classList.add('active');var at=document.getElementById('activetheme');if(at)at.textContent=THEMES[i].name;updateHighlightTheme(i);renderHome();renderPlay();toast('Theme: '+THEMES[i].name,'ok');}
 function buildTierTable(){
   var t=document.getElementById('tierTable');if(!t)return;t.innerHTML='';
   var thead=document.createElement('thead');var tr=document.createElement('tr');
@@ -2331,7 +2346,7 @@ var T={
     dir:'ltr',
     heroTag:'♛ ChessWin7 — Skill Based Arena',
     heroH1:'Play Chess.<br><span style="color:var(--accent)">Earn Real</span><br>Rewards.',
-    heroSubtitle:'Challenge real players worldwide, climb the leaderboard, and win USDT with every victory. 1 COIN = 1 USDT.',
+    heroSubtitle:'Challenge the World. Beat the King. Become the King.',
     heroBtn1:'▶ Play Now',heroBtn2:'View Rankings',
     statLabel1:'Active Players',statLabel2:'Coins Awarded',statLabel3:'Tournaments Run',
     miniTag:'Live Games',miniTitle:'Active Arenas',miniDesc:'Watch live positions from ongoing matches across all skill levels',
