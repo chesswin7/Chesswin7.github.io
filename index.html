@@ -1103,6 +1103,8 @@ function _removeLoadBar(){
 <div id="supportModal" style="display:none"></div>
 <script>
 function safeText(s){return String(s||'');}
+// HTML-escape for anything interpolated into innerHTML
+function esc(s){return String(s==null?'':s).replace(/[&<>"'`]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c];});}
 // ── TIMER ──
 var _timerInterval = null;
 var _myTime = 0, _oppTime = 0, _timerActive = false, _myTurnTimer = false;
@@ -1114,27 +1116,11 @@ function startGameTimer(tc, myFirst) {
   _timerInterval = setInterval(function() {
     if (!_timerActive) return;
     if (_myTurnTimer) {
-      _myTime--;
-      if (_myTime <= 0) {
-        _myTime = 0; updateTimerDisplay();
-        _timerActive = false; clearInterval(_timerInterval);
-        pGO = true;
-        toast('Time up! You lose.', 'err');
-        var st = document.getElementById('pSt');
-        if (st) st.textContent = 'Time up! You lose.';
-        return;
-      }
+      // Only count down; the server's clock is authoritative and it sends
+      // game_over on a time-out (a move may still be in flight at 0:00).
+      if (_myTime > 0) _myTime--;
     } else {
-      _oppTime--;
-      if (_oppTime <= 0) {
-        _oppTime = 0; updateTimerDisplay();
-        _timerActive = false; clearInterval(_timerInterval);
-        pGO = true;
-        toast('Opponent time up! You win!', 'ok');
-        var st = document.getElementById('pSt');
-        if (st) st.textContent = 'Opponent ran out of time! You win!';
-        return;
-      }
+      if (_oppTime > 0) _oppTime--;
     }
     updateTimerDisplay();
   }, 1000);
@@ -1185,10 +1171,23 @@ function algToIdx(sq) {
 function connectSocket(cb) {
   if (socket && socket.connected) { if (cb) cb(); return; }
   if (!window.currentUser) { openAuth('login'); return; }
-  window.currentUser.getIdToken().then(function(token) {
+  window.currentUser.getIdToken().then(function() {
     if (socket) { try { socket.disconnect(); } catch(e){} }
-    socket = io(GAME_SERVER_URL, { auth: { token: token }, transports: ['websocket', 'polling'] });
-    socket.on('connect', function() { if (cb) { cb(); cb = null; } });
+    // auth as a function: socket.io calls it on every reconnect, and
+    // getIdToken() refreshes the token once it's close to its 1-hour expiry
+    socket = io(GAME_SERVER_URL, {
+      auth: function(cb) {
+        if (!window.currentUser) return cb({});
+        window.currentUser.getIdToken().then(function(t) { cb({ token: t }); }).catch(function() { cb({}); });
+      },
+      transports: ['websocket', 'polling']
+    });
+    socket.on('connect', function() {
+      if (cb) { cb(); cb = null; }
+      // The server sends game_resume right away if we're still in a game;
+      // if it doesn't, the saved game is over.
+      setTimeout(function() { if (!_onlineGame) clearActiveGame(); }, 5000);
+    });
     socket.on('connect_error', function(err) {
       toast('Game server unreachable: ' + err.message, 'err');
       resetMatchButton();
@@ -1219,19 +1218,23 @@ function connectSocket(cb) {
     socket.on('game_start', function(d) { beginServerGame(d, false); });
     socket.on('game_resume', function(d) { beginServerGame(d, true); });
     socket.on('opponent_move', function(d) {
-      applyOpponentMove(d.from, d.to, d.promotion);
+      applyOpponentMove(d.from, d.to, d.promotion, d.fen);
       syncClocks(d.whiteMs, d.blackMs);
     });
     socket.on('move_confirmed', function(d) {
+      if (d.fen) loadFenIntoPlay(d.fen);
       syncClocks(d.whiteMs, d.blackMs);
     });
     socket.on('move_rejected', function(d) {
       toast('Move rejected: ' + d.reason, 'err');
-      // Resync board from server truth
+      // Undo the optimistic local move and resync from server truth
+      if (pMH.length) { pMH.pop(); updMoves(); }
       if (d.fen) loadFenIntoPlay(d.fen);
     });
     socket.on('game_over', function(d) {
       pGO = true;
+      _onlineGame = false;
+      clearActiveGame();
       stopTimer();
       syncClocks(d.whiteMs, d.blackMs);
       var st = document.getElementById('pSt');
@@ -1249,11 +1252,7 @@ function connectSocket(cb) {
         });
       }
     });
-    socket.on('draw_offered', function() {
-      var accept = confirm('Opponent offers a draw. Accept?');
-      socket.emit('respond_draw', { accept: accept });
-      if (!accept) toast('Draw declined', 'info');
-    });
+    socket.on('draw_offered', function() { showDrawOffer(); });
     socket.on('draw_declined', function() { toast('Opponent declined draw', 'info'); });
     socket.on('opponent_disconnected', function(d) {
       toast('Opponent disconnected — they have ' + (d.graceSeconds || 60) + 's to return or you win', 'info');
@@ -1261,23 +1260,33 @@ function connectSocket(cb) {
     socket.on('opponent_reconnected', function() { toast('Opponent reconnected', 'info'); });
   }).catch(function(e) { toast('Auth error: ' + e.message, 'err'); });
 }
+var _onlineGame = false; // true while a server game is in progress
+var ACTIVE_GAME_KEY = 'cw7_active_game';
+function markActiveGame(code) { try { localStorage.setItem(ACTIVE_GAME_KEY, code); } catch (e) {} }
+function clearActiveGame() { try { localStorage.removeItem(ACTIVE_GAME_KEY); } catch (e) {} }
+function hasActiveGame() { try { return !!localStorage.getItem(ACTIVE_GAME_KEY); } catch (e) { return false; } }
 function beginServerGame(d, isResume) {
   _roomCode = d.code;
   _myColor = d.color;
+  _onlineGame = true;
+  markActiveGame(d.code);
   pColor = d.color;
   pMode = 'friend';
   resetPlay();
   if (isResume && d.history) {
-    // Replay server history to restore position
+    // Replay server history for the move list, then take the position
+    // itself from the server's FEN
     d.history.forEach(function(m) {
       var fi = algToIdx(m.from), ti = algToIdx(m.to);
       var mvs = allL(pT, pB, pEp, pCr);
       var mv = mvs.find(function(x){ return x.f === fi && x.t === ti; });
       if (mv) {
+        if (mv.pro && m.promotion) mv = Object.assign({}, mv, { pro: m.promotion.toUpperCase() });
         var res = applyM(mv, pB, pEp, pCr);
         pB = res.b; pEp = res.ep; pCr = res.cr; pLmv = mv; pT = Op(pT); pMH.push(mv);
       }
     });
+    if (d.fen) loadFenIntoPlay(d.fen);
     updMoves(); renderPlay();
     toast('Game resumed', 'info');
   }
@@ -1305,6 +1314,24 @@ function beginServerGame(d, isResume) {
   if (st) st.textContent = (isResume ? (d.turn === d.color) : d.color === 'w') ? 'Your move' : "Opponent's move";
   if (!isResume) toast('Game started! You are ' + (d.color === 'w' ? 'White' : 'Black') + '.', 'ok');
 }
+function showDrawOffer() {
+  var old = document.getElementById('drawOfferBar'); if (old) old.remove();
+  var bar = document.createElement('div');
+  bar.id = 'drawOfferBar';
+  bar.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1000;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-weight:700';
+  var txt = document.createElement('span'); txt.textContent = 'Opponent offers a draw';
+  var yes = document.createElement('button'); yes.className = 'btn btn-sm'; yes.textContent = 'Accept';
+  var no = document.createElement('button'); no.className = 'btn btn-o btn-sm'; no.textContent = 'Decline';
+  function answer(accept) {
+    bar.remove();
+    if (socket && socket.connected) socket.emit('respond_draw', { accept: accept });
+    if (!accept) toast('Draw declined', 'info');
+  }
+  yes.onclick = function() { answer(true); };
+  no.onclick = function() { answer(false); };
+  bar.appendChild(txt); bar.appendChild(yes); bar.appendChild(no);
+  document.body.appendChild(bar);
+}
 function syncClocks(whiteMs, blackMs) {
   if (whiteMs == null || _myColor == null) return;
   _myTime = Math.ceil((_myColor === 'w' ? whiteMs : blackMs) / 1000);
@@ -1312,7 +1339,8 @@ function syncClocks(whiteMs, blackMs) {
   updateTimerDisplay();
 }
 function loadFenIntoPlay(fen) {
-  // Minimal FEN loader for resync after a rejected move
+  // Sets board, side to move, castling rights and en passant from the
+  // server's FEN, so the local board can never drift from the server's.
   try {
     var parts = fen.split(' ');
     var rows = parts[0].split('/');
@@ -1330,11 +1358,16 @@ function loadFenIntoPlay(fen) {
     }
     pB = b;
     pT = parts[1] === 'w' ? 'w' : 'b';
+    var cas = parts[2] || '-';
+    pCr = { wK: cas.indexOf('K') >= 0 ? 1 : 0, wQ: cas.indexOf('Q') >= 0 ? 1 : 0,
+            bK: cas.indexOf('k') >= 0 ? 1 : 0, bQ: cas.indexOf('q') >= 0 ? 1 : 0 };
+    pEp = parts[3] && parts[3] !== '-' ? algToIdx(parts[3]) : null;
     pSel = null; pLm = [];
+    if (_timerActive && _myColor) _myTurnTimer = (pT === _myColor);
     renderPlay();
   } catch (e) { console.warn('FEN resync failed', e); }
 }
-function applyOpponentMove(from, to, promotion) {
+function applyOpponentMove(from, to, promotion, fen) {
   var fi = algToIdx(from);
   var ti = algToIdx(to);
   var legalMvs = allL(pT, pB, pEp, pCr);
@@ -1342,12 +1375,19 @@ function applyOpponentMove(from, to, promotion) {
   for (var i = 0; i < legalMvs.length; i++) {
     if (legalMvs[i].f === fi && legalMvs[i].t === ti) { mv = legalMvs[i]; break; }
   }
-  if (!mv) return;
-  var res = applyM(mv, pB, pEp, pCr);
-  pB = res.b; pEp = res.ep; pCr = res.cr;
-  pLmv = mv; pT = Op(pT);
-  pMH.push(mv); updMoves(); renderPlay();
-  if (_timerActive) switchTimerTurn();
+  if (mv && mv.pro && promotion) mv = Object.assign({}, mv, { pro: String(promotion).toUpperCase() });
+  if (mv) {
+    var res = applyM(mv, pB, pEp, pCr);
+    pB = res.b; pEp = res.ep; pCr = res.cr; pT = Op(pT);
+  } else {
+    mv = { f: fi, t: ti, pro: promotion ? String(promotion).toUpperCase() : false };
+  }
+  pLmv = mv; pMH.push(mv);
+  // The server's position is the truth (also fixes anything the local
+  // engine doesn't model, e.g. castling rights lost when a rook is captured)
+  if (fen) loadFenIntoPlay(fen);
+  else if (_timerActive) switchTimerTurn();
+  updMoves(); renderPlay();
   playCheckEnd();
   var st = document.getElementById('pSt');
   if (st && !pGO) st.textContent = 'Your move';
@@ -1415,7 +1455,7 @@ function kng(col,b){for(var i=0;i<64;i++)if(b[i]&&b[i].c===col&&b[i].n==='K')ret
 function applyM(mv,b,ep,cr){var nb=b.slice(),p=nb[mv.f];nb[mv.t]=p;nb[mv.f]=null;var nc=Object.assign({},cr),nep=null;
   if(mv.ep)nb[I(Rw(mv.f),Cw(mv.t))]=null;
   if(mv.dbl)nep=I((Rw(mv.f)+Rw(mv.t))/2,Cw(mv.f));
-  if(mv.pro)nb[mv.t]={c:p.c,n:'Q'};
+  if(mv.pro)nb[mv.t]={c:p.c,n:typeof mv.pro==='string'?mv.pro:'Q'};
   if(mv.cas){var brr=Rw(mv.f);if(mv.cas==='K'){nb[I(brr,5)]=nb[I(brr,7)];nb[I(brr,7)]=null;}else{nb[I(brr,3)]=nb[I(brr,0)];nb[I(brr,0)]=null;}}
   if(p.n==='K'){nc[p.c+'K']=0;nc[p.c+'Q']=0;}
   if(p.n==='R'){if(mv.f===I(7,0))nc.wQ=0;if(mv.f===I(7,7))nc.wK=0;if(mv.f===I(0,0))nc.bQ=0;if(mv.f===I(0,7))nc.bK=0;}
@@ -1564,7 +1604,10 @@ function renderPlay(){
     });
   },20);
 }
-function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB[i];
+function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;
+  // Online: only your own pieces, only on your turn, only while connected
+  if(_onlineGame&&(pT!==_myColor||!socket||!socket.connected))return;
+  var p=pB[i];
   if(pSel===null){if(!p||p.c!==pT)return;pSel=i;pLm=legal(i,pB,pEp,pCr).map(function(m){return m.t;});renderPlay();}
   else{if(i===pSel){pSel=null;pLm=[];renderPlay();return;}
     if(p&&p.c===pT){pSel=i;pLm=legal(i,pB,pEp,pCr).map(function(m){return m.t;});renderPlay();return;}
@@ -1572,7 +1615,7 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
     if(mv){
       pHist.push({b:pB.slice(),t:pT,s:pSel,l:pLm.slice(),lv:pLmv,cr:Object.assign({},pCr),ep:pEp});
       var res=applyM(mv,pB,pEp,pCr);pB=res.b;pEp=res.ep;pCr=res.cr;pLmv=mv;pSel=null;pLm=[];pT=Op(pT);pMH.push(mv);updMoves();renderPlay();
-      if(pMode==='friend'&&_roomCode&&_myColor&&socket&&socket.connected){
+      if(_onlineGame&&socket&&socket.connected){
         socket.emit('move',{
           from:idxToAlg(mv.f),
           to:idxToAlg(mv.t),
@@ -1596,14 +1639,16 @@ function playClick(i){if(pGO)return;if(pMode==='ai'&&pT!==pColor)return;var p=pB
   }
 }
 function playCheckEnd(){var mv=allL(pT,pB,pEp,pCr),k=kng(pT,pB),inC=atk(k,Op(pT),pB,pEp,pCr);
-  if(!mv.length){pGO=true;var st=document.getElementById('pSt');if(st)st.textContent=(pT==='w'?'Black':'White')+' wins!';}
+  // Online games are decided by the server's game_over
+  if(!mv.length&&_onlineGame)return true;
+  if(!mv.length){pGO=true;var st=document.getElementById('pSt');if(st)st.textContent=inC?(pT==='w'?'Black':'White')+' wins!':'Stalemate — draw';}
   else if(inC){var st=document.getElementById('pSt');if(st)st.textContent=(pT==='w'?'White':'Black')+' in check!';}
   return!mv.length;}
 function updMoves(){var box=document.getElementById('pMoves');if(!box)return;box.innerHTML='';
   pMH.forEach(function(m,i){var d=document.createElement('div');var sq=function(x){return'abcdefgh'[Cw(x)]+(8-Rw(x));};
     d.className=i%2===0?'mv-w':'mv-b';
     if(i%2===0){var num=makeSafeEl('span','mv-n',(Math.floor(i/2)+1)+'.');d.appendChild(num);}
-    d.appendChild(document.createTextNode(sq(m.f)+sq(m.t)+(m.pro?'=Q':'')));box.appendChild(d);});
+    d.appendChild(document.createTextNode(sq(m.f)+sq(m.t)+(m.pro?'='+(typeof m.pro==='string'?m.pro:'Q'):'')));box.appendChild(d);});
   box.scrollTop=box.scrollHeight;}
 function resetPlay(){pB=mkB();pT='w';pSel=null;pLm=[];pLmv=null;pCr={wK:1,wQ:1,bK:1,bQ:1};pEp=null;pHist=[];pMH=[];pGO=false;updMoves();renderPlay();var st=document.getElementById('pSt');if(st)st.textContent='Choose a mode →';}
 function undoPlay(){if(!pHist.length||pMode!=='ai')return;var h=pHist.pop();pB=h.b;pT=h.t;pSel=h.s;pLm=h.l;pLmv=h.lv;pCr=h.cr;pEp=h.ep;pGO=false;if(pMH.length)pMH.pop();updMoves();renderPlay();playCheckEnd();}
@@ -1614,7 +1659,7 @@ function startAI(){var col=document.getElementById('aiCol').value;pColor=col==='
   if(pColor==='b'){var atbS=document.getElementById('aiThinkBar');if(atbS)atbS.style.display='block';var bm=bestAI(pB,4,pEp,pCr);if(bm){var res=applyM(bm,pB,pEp,pCr);pB=res.b;pEp=res.ep;pCr=res.cr;pLmv=bm;pT=Op(pT);pMH.push(bm);updMoves();renderPlay();playCheckEnd();var atbE=document.getElementById('aiThinkBar');if(atbE)atbE.style.display='none';}}}
 function switchMode(m,btn){pMode=m;document.querySelectorAll('.mt').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.mc').forEach(function(c){c.classList.remove('active');});var mc=document.getElementById('mc-'+m);if(mc)mc.classList.add('active');}
 function offerDraw(){
-  if(pMode==='friend'&&_roomCode&&socket&&socket.connected){
+  if(_onlineGame&&socket&&socket.connected){
     socket.emit('offer_draw');
     toast('Draw offered to opponent','info');
   } else {
@@ -1623,7 +1668,7 @@ function offerDraw(){
 }
 function resignGame(){
   if(pGO)return;
-  if(pMode==='friend'&&_roomCode&&socket&&socket.connected){
+  if(_onlineGame&&socket&&socket.connected){
     socket.emit('resign');
     // server will send game_over which sets pGO and messages
     return;
@@ -1716,10 +1761,12 @@ function buildLB(players){
   tick();
 }
 function loadLB(){
-  db.collection('users').orderBy('rating','desc').limit(20).get().then(function(snap){
+  // Player profiles are private in Firestore; the game server publishes
+  // the public leaderboard fields.
+  fetch(GAME_SERVER_URL+'/leaderboard').then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(function(data){
     var realPlayers=[];
-    snap.docs.forEach(function(d){
-      var u=Object.assign({uid:d.id},d.data());
+    (data.players||[]).forEach(function(d){
+      var u=Object.assign({},d);
       u.u=u.username;u.r=u.rating||0;u.w=u.wins||0;u.c=u.coins||0;
       if(u.r>0||u.w>0){realPlayers.push(u);}
     });
@@ -1896,13 +1943,31 @@ function openAuth(mode){
     document.getElementById('a-pw2').addEventListener('keydown',function(e){if(e.key==='Enter')doSignup();});
   } else if(m==='verify'){
     var emailShow=_pendingSignup?_pendingSignup.email:'your email';
-    f.innerHTML='<div style="text-align:center;padding:4px 0 16px"><div style="font-size:52px;margin-bottom:10px">📧</div><p style="font-size:13px;color:var(--muted);margin-bottom:6px">6-digit code sent to:</p><p style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:16px;word-break:break-all">'+emailShow+'</p></div><input id="otp-input" placeholder="Enter 6-digit code" type="text" maxlength="6" style="width:100%;padding:14px;background:var(--surface2);border:2px solid var(--border2);border-radius:8px;color:var(--text);font-size:28px;font-weight:900;letter-spacing:12px;text-align:center;font-family:monospace;outline:none;margin-bottom:6px;box-sizing:border-box" oninput="this.value=this.value.replace(/[^0-9]/g,\'\').substring(0,6)" onkeydown="if(event.key===\'Enter\')checkOTP()"><p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px">⏱ Expires in 10 minutes</p><button class="btn" style="width:100%;margin-bottom:8px;font-size:15px;padding:13px" onclick="checkOTP()">✅ Verify Code</button><button class="btn btn-o" style="width:100%;margin-bottom:8px" onclick="resendOTP()">📨 Resend Code</button><button class="btn btn-o" style="width:100%;font-size:12px;color:var(--muted)" onclick="cancelSignup()">Cancel & Start Over</button>';
-    setTimeout(function(){var inp=document.getElementById('otp-input');if(inp)inp.focus();},100);
+    f.innerHTML='<div style="text-align:center;padding:4px 0 16px"><div style="font-size:52px;margin-bottom:10px">📧</div><p style="font-size:13px;color:var(--muted);margin-bottom:6px">We sent a verification link to:</p><p style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:12px;word-break:break-all">'+esc(emailShow)+'</p><p style="font-size:12px;color:var(--muted)">Open the link in that email, then come back and press Continue. Check your spam folder if you don\'t see it.</p></div><button class="btn" style="width:100%;margin-bottom:8px;font-size:15px;padding:13px" onclick="checkVerified()">✅ I\'ve verified — Continue</button><button class="btn btn-o" style="width:100%;margin-bottom:8px" onclick="resendVerification()">📨 Resend Email</button><button class="btn btn-o" style="width:100%;font-size:12px;color:var(--muted)" onclick="cancelSignup()">Cancel & Start Over</button>';
   } else {
     f.innerHTML='<input id="a-em" placeholder="Email or Username" autocomplete="username" style="margin-bottom:10px"><input id="a-pw" placeholder="Password" type="password" autocomplete="current-password" style="margin-bottom:6px"><div style="text-align:right;margin-bottom:14px"><a onclick="openForgotPassword()" style="font-size:12px;color:var(--accent2);cursor:pointer;font-weight:600">Forgot Password?</a></div><button class="btn" style="width:100%;margin-bottom:10px" onclick="doLogin()">Sign In</button><div class="divider"><span>OR</span></div><button class="google-btn" onclick="doGoogle()">'+GSVG+' Continue with Google</button><div class="switch-link">No account? <a onclick="openAuth(\'signup\')">Create one</a></div>';
     document.getElementById('a-pw').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
   }
   modal.classList.add('open');modal.dataset.mode=m;
+}
+// Usernames are stored lowercased as usernames/{name} → {uid, email}; that
+// lets "sign in with username" work without making player profiles public.
+function cleanUsername(un){
+  un=String(un||'').replace(/[<>"'&\/]/g,'').trim().substring(0,30);
+  return(un==='.'||un==='..'||/^__.*__$/.test(un))?'':un;
+}
+function usernameRef(un){return db.collection('usernames').doc(un.toLowerCase());}
+// After sign-in: claim the username lookup doc if it's missing (accounts
+// created before it existed) and mirror a verified email into the profile.
+function syncAccountDocs(user,data){
+  if(!user||!data)return;
+  if(user.emailVerified&&data.emailVerified!==true){
+    db.collection('users').doc(user.uid).update({emailVerified:true}).then(function(){data.emailVerified=true;}).catch(function(){});
+  }
+  var un=cleanUsername(data.username);
+  if(un&&un===data.username&&user.email){
+    usernameRef(un).get().then(function(s){if(!s.exists)return usernameRef(un).set({uid:user.uid,email:user.email});}).catch(function(){});
+  }
 }
 function doSignup(){
   var un=(document.getElementById('a-un')||{value:''}).value.trim();
@@ -1912,54 +1977,62 @@ function doSignup(){
   if(!un){toast('Please enter a username','err');return;}
   if(!em){toast('Please enter your email','err');return;}
   if(!pw){toast('Please enter a password','err');return;}
-  un=un.replace(/[<>"'&]/g,'').trim();
+  un=cleanUsername(un);
   if(!un){toast('Username contains invalid characters','err');return;}
   if(pw.length<6){toast('Password must be at least 6 characters','err');return;}
   if(pw!==pw2){toast('Passwords do not match','err');return;}
   var btn=document.querySelector('#auth-form .btn');if(btn){btn.disabled=true;btn.textContent='Creating account...';}
-  var _otp=String(Math.floor(100000+Math.random()*900000));
-  auth.createUserWithEmailAndPassword(em,pw).then(function(cr){
-    _pendingSignup={uid:cr.user.uid,username:un,email:em,password:pw,otp:_otp,otpExpiry:Date.now()+10*60*1000};
-    return db.collection('users').doc(cr.user.uid).set({
-      username:un,email:em,coins:0,rating:0,wins:0,losses:0,phone:'',
+  usernameRef(un).get().then(function(snap){
+    if(snap.exists)throw{code:'cw7/username-taken'};
+    return auth.createUserWithEmailAndPassword(em,pw);
+  }).then(function(cr){
+    var u=cr.user;
+    _pendingSignup={uid:u.uid,username:un,email:u.email,password:pw};
+    return db.collection('users').doc(u.uid).set({
+      username:un,email:u.email,coins:0,rating:0,wins:0,losses:0,phone:'',
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),
       lastDaily:null,emailVerified:false
-    });
-  }).then(function(){return auth.signOut();})
-  .then(function(){return sendEmail({action:'send-otp',email:em,username:un,otp:_otp});})
-  .then(function(result){
-    if(result.error){return auth.signInWithEmailAndPassword(em,pw).then(function(cr2){return cr2.user.sendEmailVerification().then(function(){return auth.signOut();});});}
-    openAuth('verify');
-  }).catch(function(e){toast(friendlyErr(e.code,e.message),'err');if(btn){btn.disabled=false;btn.textContent='Create Account';}});
+    }).then(function(){return usernameRef(un).set({uid:u.uid,email:u.email}).catch(function(){});})
+    .then(function(){return u.sendEmailVerification();})
+    .then(function(){return auth.signOut();});
+  }).then(function(){openAuth('verify');})
+  .catch(function(e){toast(friendlyErr(e.code,e.message),'err');if(btn){btn.disabled=false;btn.textContent='Create Account';}});
 }
-function checkOTP(){
-  var btns=document.querySelectorAll('#auth-form .btn');var btn=btns[0];if(btn){btn.disabled=true;btn.textContent='Verifying...';}
+// The verification state lives in Firebase Auth (set when the user opens the
+// emailed link), so it can't be faked from the browser.
+function checkVerified(){
+  var btns=document.querySelectorAll('#auth-form .btn');var btn=btns[0];
   if(!_pendingSignup){openAuth('login');return;}
-  var otpInput=document.getElementById('otp-input');var entered=otpInput?otpInput.value.trim():'';
-  if(!entered||entered.length!==6){if(btn){btn.disabled=false;btn.textContent='✅ Verify Code';}toast('Please enter the 6-digit code from your email','err');return;}
-  if(Date.now()>(_pendingSignup.otpExpiry||0)){if(btn){btn.disabled=false;btn.textContent='✅ Verify Code';}toast('Code expired. Click Resend to get a new one.','err');return;}
-  if(entered!==String(_pendingSignup.otp)){if(btn){btn.disabled=false;btn.textContent='✅ Verify Code';}toast('Incorrect code. Please try again.','err');return;}
-  auth.signInWithEmailAndPassword(_pendingSignup.email,_pendingSignup.password).then(function(cr){
-    return db.collection('users').doc(cr.user.uid).set({emailVerified:true},{merge:true}).catch(function(){});
-  }).then(function(){
-    toast('🎉 Welcome '+(_pendingSignup.username||'')+'! Account verified ✅','ok');
+  if(btn){btn.disabled=true;btn.textContent='Checking...';}
+  var p=_pendingSignup;
+  auth.signInWithEmailAndPassword(p.email,p.password).then(function(cr){
+    if(!cr.user.emailVerified){return auth.signOut().then(function(){throw{code:'cw7/not-verified'};});}
+    toast('🎉 Welcome'+(p.username?' '+p.username:'')+'! Email verified ✅','ok');
     _pendingSignup=null;document.getElementById('authModal').classList.remove('open');
-  }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='✅ Verify Code';}toast(friendlyErr(e.code,e.message),'err');});
+  }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='✅ I\'ve verified — Continue';}toast(friendlyErr(e.code,e.message),'err');});
 }
-function resendOTP(){
+function resendVerification(){
   if(!_pendingSignup){toast('Please start over','err');return;}
   var btns=document.querySelectorAll('#auth-form .btn');var btn=btns[1];if(btn){btn.disabled=true;btn.textContent='Sending...';}
-  var newOtp=String(Math.floor(100000+Math.random()*900000));
-  _pendingSignup.otp=newOtp;_pendingSignup.otpExpiry=Date.now()+10*60*1000;
-  sendEmail({action:'send-otp',email:_pendingSignup.email,username:_pendingSignup.username,otp:newOtp}).then(function(result){
-    if(btn){btn.disabled=false;btn.textContent='📨 Resend Code';}
-    if(result.error){toast('Could not send email. Try again.','err');}else{toast('New code sent! Check your inbox.','ok');}
-  }).catch(function(){if(btn){btn.disabled=false;btn.textContent='📨 Resend Code';}toast('Could not send email.','err');});
+  auth.signInWithEmailAndPassword(_pendingSignup.email,_pendingSignup.password).then(function(cr){
+    return cr.user.sendEmailVerification().then(function(){return auth.signOut();});
+  }).then(function(){
+    if(btn){btn.disabled=false;btn.textContent='📨 Resend Email';}
+    toast('New verification email sent! Check your inbox.','ok');
+  }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='📨 Resend Email';}toast(friendlyErr(e.code,e.message),'err');});
 }
 function cancelSignup(){
-  var uid=_pendingSignup?_pendingSignup.uid:null;_pendingSignup=null;
-  var u=auth.currentUser;if(u)u.delete().catch(function(){});
-  openAuth('signup');
+  var p=_pendingSignup;_pendingSignup=null;
+  if(!p||!p.password){openAuth('signup');return;}
+  // Delete the unverified account so the email and username can be reused
+  auth.signInWithEmailAndPassword(p.email,p.password).then(function(cr){
+    var u=cr.user;
+    if(u.emailVerified)return auth.signOut();
+    var steps=[db.collection('users').doc(u.uid).delete().catch(function(){})];
+    if(p.username)steps.push(usernameRef(p.username).delete().catch(function(){}));
+    return Promise.all(steps).then(function(){return u.delete();});
+  }).catch(function(){return auth.signOut().catch(function(){});})
+  .then(function(){openAuth('signup');});
 }
 function doLogin(){
   var input=(document.getElementById('a-em')||{value:''}).value.trim();
@@ -1970,12 +2043,20 @@ function doLogin(){
   function attemptLogin(email){
     auth.signInWithEmailAndPassword(email,pw).then(function(cr){
       var isEmailProvider=cr.user.providerData.some(function(p){return p.providerId==='password';});
-      if(isEmailProvider&&!cr.user.emailVerified){_pendingSignup={uid:cr.user.uid,username:'',email:email,password:pw};return auth.signOut().then(function(){openAuth('verify');});}
+      if(isEmailProvider&&!cr.user.emailVerified){_pendingSignup={uid:cr.user.uid,username:'',email:cr.user.email,password:pw};return auth.signOut().then(function(){openAuth('verify');});}
       toast('Welcome back! 👋','ok');document.getElementById('authModal').classList.remove('open');
     }).catch(function(e){if(btn){btn.disabled=false;btn.textContent='Sign In';}toast(friendlyErr(e.code,e.message),'err');});
   }
+  function notFound(msg){if(btn){btn.disabled=false;btn.textContent='Sign In';}toast(msg,'err');}
   if(input.indexOf('@')!==-1){attemptLogin(input);}
-  else{db.collection('users').where('username','==',input).limit(1).get().then(function(snap){if(snap.empty){if(btn){btn.disabled=false;btn.textContent='Sign In';}toast('Username not found. Try your email instead.','err');return;}var userData=snap.docs[0].data();if(!userData.email){if(btn){btn.disabled=false;btn.textContent='Sign In';}toast('Could not find account.','err');return;}attemptLogin(userData.email);}).catch(function(){if(btn){btn.disabled=false;btn.textContent='Sign In';}toast('Error. Try your email instead.','err');});}
+  else{
+    var un=cleanUsername(input);
+    if(!un){notFound('Username not found. Try your email instead.');return;}
+    usernameRef(un).get().then(function(snap){
+      if(!snap.exists||!snap.data().email){notFound('Username not found. Try your email instead.');return;}
+      attemptLogin(snap.data().email);
+    }).catch(function(){notFound('Error. Try your email instead.');});
+  }
 }
 function doGoogle(){
   var provider=new firebase.auth.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
@@ -1983,14 +2064,14 @@ function doGoogle(){
     var u=cr.user;
     return db.collection('users').doc(u.uid).get().then(function(snap){
       if(!snap.exists){
-        return db.collection('users').where('email','==',u.email).limit(1).get().then(function(emailSnap){
-          if(!emailSnap.empty){toast('Welcome back, '+safeText(emailSnap.docs[0].data().username||'')+'! 👋','ok');return;}
-          var uname=(u.displayName||u.email.split('@')[0]).replace(/[<>"'&]/g,'').trim()||'Player';
-          return db.collection('users').doc(u.uid).set({
-            username:uname,email:u.email,coins:0,rating:0,wins:0,losses:0,
-            phone:'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastDaily:null,emailVerified:true
-          }).then(function(){toast('Welcome '+uname+'! 👋','ok');}).catch(function(){toast('Welcome!','ok');});
-        });
+        var uname=cleanUsername(u.displayName||u.email.split('@')[0])||'Player';
+        return db.collection('users').doc(u.uid).set({
+          username:uname,email:u.email,coins:0,rating:0,wins:0,losses:0,
+          phone:'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastDaily:null,emailVerified:u.emailVerified===true
+        }).then(function(){
+          // Claim the username for username login if it's free
+          return usernameRef(uname).get().then(function(s){if(!s.exists)return usernameRef(uname).set({uid:u.uid,email:u.email});}).catch(function(){});
+        }).then(function(){toast('Welcome '+uname+'! 👋','ok');}).catch(function(){toast('Welcome!','ok');});
       } else {toast('Welcome back, '+safeText(snap.data().username||'')+'! 👋','ok');}
     });
   }).then(function(){document.getElementById('authModal').classList.remove('open');})
@@ -2004,6 +2085,8 @@ function friendlyErr(code,msg){
   if(code==='auth/invalid-email')return'Please enter a valid email address';
   if(code==='auth/too-many-requests')return'Too many attempts. Please wait a few minutes.';
   if(code==='auth/network-request-failed')return'Network error. Check your connection.';
+  if(code==='cw7/username-taken')return'That username is taken — please choose another';
+  if(code==='cw7/not-verified')return'Email not verified yet. Open the link we emailed you, then try again.';
   return msg||'Something went wrong';
 }
 function doLogout(){auth.signOut().then(function(){_pendingSignup=null;toast('Logged out','info');goPage('home');});}
@@ -2084,10 +2167,10 @@ function showAccountStatement(){
     var totalDep=deps.filter(function(d){return d.status==='approved';}).reduce(function(a,d){return a+(d.amount||0);},0);
     var totalWd=wds.filter(function(w){return w.status==='approved';}).reduce(function(a,w){return a+(w.amount||0);},0);
     var pendingCount=all.filter(function(e){return e.status==='pending';}).length;
-    var rows=all.map(function(e){var cr=0,dr=0;if(e._type==='deposit'&&e.status==='approved')cr=e.amount;if(e._type==='withdrawal'&&e.status==='approved')dr=e.amount;bal+=cr-dr;var dt=e.createdAt&&e.createdAt.toDate?e.createdAt.toDate().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';var statusHtml=e.status==='approved'?'<span style="background:rgba(0,231,1,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✓ Approved</span>':e.status==='pending'?'<span style="background:rgba(240,165,0,.15);color:#f0a500;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">⏳ Pending</span>':'<span style="background:rgba(249,56,72,.15);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✗ Rejected</span>';var ref=e._type==='deposit'?(e.txid?e.txid.substring(0,16)+'...':'—'):(e.wallet?e.wallet.substring(0,16)+'...':'—');return'<tr style="border-bottom:1px solid var(--border)"><td style="padding:12px 16px;color:var(--muted);font-size:12px">'+dt+'</td><td style="padding:12px 16px"><span style="font-weight:700;color:'+(e._type==='deposit'?'var(--green)':'var(--red)')+'">'+( e._type==='deposit'?'💰 Deposit':'💸 Withdrawal')+'</span></td><td style="padding:12px 16px;color:var(--green);font-weight:800">'+(cr>0?'+'+cr:'')+'</td><td style="padding:12px 16px;color:var(--red);font-weight:800">'+(dr>0?'-'+dr:'')+'</td><td style="padding:12px 16px;color:var(--accent);font-weight:800">'+bal+'</td><td style="padding:12px 16px">'+statusHtml+'</td><td style="padding:12px 16px;color:var(--muted);font-size:11px">'+ref+'</td></tr>';});
+    var rows=all.map(function(e){var cr=0,dr=0;if(e._type==='deposit'&&e.status==='approved')cr=e.amount;if(e._type==='withdrawal'&&e.status==='approved')dr=e.amount;bal+=cr-dr;var dt=e.createdAt&&e.createdAt.toDate?e.createdAt.toDate().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';var statusHtml=e.status==='approved'?'<span style="background:rgba(0,231,1,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✓ Approved</span>':e.status==='pending'?'<span style="background:rgba(240,165,0,.15);color:#f0a500;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">⏳ Pending</span>':'<span style="background:rgba(249,56,72,.15);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✗ Rejected</span>';var ref=esc(e._type==='deposit'?(e.txid?e.txid.substring(0,16)+'...':'—'):(e.wallet?e.wallet.substring(0,16)+'...':'—'));return'<tr style="border-bottom:1px solid var(--border)"><td style="padding:12px 16px;color:var(--muted);font-size:12px">'+dt+'</td><td style="padding:12px 16px"><span style="font-weight:700;color:'+(e._type==='deposit'?'var(--green)':'var(--red)')+'">'+( e._type==='deposit'?'💰 Deposit':'💸 Withdrawal')+'</span></td><td style="padding:12px 16px;color:var(--green);font-weight:800">'+(cr>0?'+'+esc(cr):'')+'</td><td style="padding:12px 16px;color:var(--red);font-weight:800">'+(dr>0?'-'+esc(dr):'')+'</td><td style="padding:12px 16px;color:var(--accent);font-weight:800">'+esc(bal)+'</td><td style="padding:12px 16px">'+statusHtml+'</td><td style="padding:12px 16px;color:var(--muted);font-size:11px">'+ref+'</td></tr>';});
     var el=document.getElementById('stmtContent');if(!el)return;
     el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px"><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--accent)">🪙 '+curCoins.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Current Balance</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--green)">+'+totalDep.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Total Deposited</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--red)">-'+totalWd.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Total Withdrawn</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#f0a500">'+pendingCount+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Pending</div></div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px"><thead><tr style="background:var(--surface2)"><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Date</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Type</th><th style="padding:12px 16px;font-size:11px;color:var(--green)">Credit</th><th style="padding:12px 16px;font-size:11px;color:var(--red)">Debit</th><th style="padding:12px 16px;font-size:11px;color:var(--accent)">Balance</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Status</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Ref</th></tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No transactions yet</td></tr>')+'</tbody></table></div></div>';
-  }).catch(function(e){var el=document.getElementById('stmtContent');if(el)el.innerHTML='<p style="color:var(--red);padding:20px">Error loading statement: '+e.message+'</p>';});
+  }).catch(function(e){var el=document.getElementById('stmtContent');if(el)el.innerHTML='<p style="color:var(--red);padding:20px">Error loading statement: '+esc(e.message)+'</p>';});
 }
 window.currentUser=null;window.currentUserData=null;
 auth.onAuthStateChanged(function(user){
@@ -2104,10 +2187,15 @@ auth.onAuthStateChanged(function(user){
       if(sidebar)sidebar.classList.add('show');if(gNav)gNav.style.display='none';var pb=document.getElementById('promoBtn');if(pb)pb.style.display='none';
       if(hRight){hRight.style.visibility='visible';buildNavbarAuth(data);}
       updateProfilePage(data);updateStatsPage(data);loadLB();updateMobDrawer(user,data);
-      loadPlatformWallets();
+      loadPlatformWallets();loadPlatformSettings();
+      if(snap.exists)syncAccountDocs(user,data);
+      // Reconnect after a page reload so the server can resume the game
+      // (otherwise the 60s abandonment timer forfeits it)
+      if(hasActiveGame())connectSocket();
     });
   }else{
     window.currentUserData=null;
+    if(socket){try{socket.disconnect();}catch(e){}socket=null;}
     if(sidebar)sidebar.classList.remove('show');if(gNav)gNav.style.display='flex';var pb2=document.getElementById('promoBtn');if(pb2)pb2.style.display='';
     updateMobDrawer(null,null);
     if(hRight){hRight.style.visibility='visible';hRight.innerHTML='<div style="display:flex;gap:8px"><button class="btn btn-o btn-sm" onclick="openAuth(\'login\')">Login</button><button class="btn btn-sm" onclick="openAuth(\'signup\')">Sign Up</button></div>';}
@@ -2164,13 +2252,20 @@ function rateLimit(action,maxPerMin){
   if(_actionLog[action].length>=maxPerMin){toast('Too many attempts. Please wait.','err');return false;}
   _actionLog[action].push(now);return true;
 }
+var _platformSettings={minDeposit:10};
+function loadPlatformSettings(){
+  db.collection('settings').doc('platform').get().then(function(snap){
+    if(snap.exists)_platformSettings=Object.assign({minDeposit:10},snap.data());
+  }).catch(function(){});
+}
 function submitDeposit(){
   if(!window.currentUser){openAuth('login');return;}
   if(!rateLimit('deposit',3)){return;}
   var amt=parseFloat(document.getElementById('dpAmt').value);
   var tx=document.getElementById('dpTx').value.trim();
   var note=document.getElementById('dpNote').value.trim();
-  if(!amt||amt<10||amt>100000){toast('Invalid amount','err');return;}
+  var minDep=Number(_platformSettings.minDeposit)||10;
+  if(!amt||amt<minDep||amt>100000){toast(amt&&amt<minDep?'Minimum deposit is '+minDep+' USDT':'Invalid amount','err');return;}
   if(!tx){toast('Enter your TxID','err');return;}
   db.collection('deposits').add({userId:window.currentUser.uid,username:safeText(window.currentUserData?window.currentUserData.username:''),email:safeText(window.currentUser.email),amount:amt,txid:tx,note:note,status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()})
   .then(function(){

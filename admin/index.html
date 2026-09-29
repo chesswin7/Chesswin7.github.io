@@ -303,18 +303,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
             <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">Platform Fee</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Deducted from every prize pool</div>
             <div style="display:flex;align-items:center;gap:10px">
-              <input id="feeInput" value="5" type="number" class="set-input" style="width:70px">
+              <input id="feeInput" value="5" type="number" min="0" max="50" class="set-input" style="width:70px">
               <span style="color:var(--muted);font-weight:600">%</span>
-              <button class="btn btn-sm" onclick="toast('Fee updated','ok')">Save</button>
+              <button class="btn btn-sm" onclick="savePlatformSetting('feePercent','feeInput',0,50)">Save</button>
             </div>
           </div>
           <div class="tbl-wrap" style="padding:20px">
             <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">Min Deposit</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Minimum USDT deposit allowed</div>
             <div style="display:flex;align-items:center;gap:10px">
-              <input value="10" type="number" class="set-input" style="width:80px">
+              <input id="minDepInput" value="10" type="number" min="1" class="set-input" style="width:80px">
               <span style="color:var(--muted);font-weight:600">USDT</span>
-              <button class="btn btn-sm" onclick="toast('Saved','ok')">Save</button>
+              <button class="btn btn-sm" onclick="savePlatformSetting('minDeposit','minDepInput',1,100000)">Save</button>
             </div>
           </div>
           <div class="tbl-wrap" style="padding:20px;grid-column:1/-1">
@@ -408,7 +408,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
           </div>
         </div>
         <div class="tbl-wrap" style="padding:16px">
-          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px">Account Status</div>
+          <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px">Email Verified (profile flag)</div>
           <div style="display:flex;align-items:center;gap:12px">
             <label class="tog"><input type="checkbox" id="um-tog" onchange="toggleActStatus()"><div class="tog-sl"></div></label>
             <span id="um-tog-lbl" style="font-size:12px;color:var(--muted);font-weight:600">Active</span>
@@ -435,9 +435,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 <div class="toast" id="toastEl"></div>
 
 <script>
-// Safe DOM helpers
-function safeText(s){return String(s||'');}
-const ADMIN_EMAIL = 'admin@chesswin7.com';
+// Safe DOM helpers — everything from Firestore is user-controlled and must
+// be escaped before it goes into innerHTML.
+function esc(s){return String(s==null?'':s).replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));}
+// A value passed as a string argument inside an onclick="..." attribute
+function jsq(s){return esc(JSON.stringify(String(s==null?'':s)));}
+function num(v){return Number(v)||0;}
+function stCls(s){return['pending','approved','rejected'].includes(s)?s:'pending';}
+// Admin access is the `admin` custom claim (scripts/set-admin.js in the
+// server repo). The Firestore rules enforce the same claim; this check only
+// decides which screen to show.
+function isAdminUser(user){
+  if(!user)return Promise.resolve(false);
+  return user.getIdTokenResult(true).then(r=>r.claims.admin===true).catch(()=>false);
+}
 
 const TIERS=[
   {n:'Bronze',i:'🥉',c:'t-bronze',mn:0,mx:799},
@@ -470,21 +481,22 @@ window.addEventListener('load', function(){
   document.body.appendChild(loadDiv);
 
   auth.onAuthStateChanged(function(user){
-    var ld=document.getElementById('authLoading');if(ld)ld.remove();
-
-    if(user && user.email === ADMIN_EMAIL){
-      document.getElementById('loginGate').style.display='none';
-      document.getElementById('adminShell').style.display='flex';
-      document.getElementById('hdrEmail').textContent=user.email;
-      document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-      loadAll();
-      setupListeners();
-    } else {
-      document.getElementById('loginGate').style.display='flex';
-      document.getElementById('adminShell').style.display='none';
-    }
+    isAdminUser(user).then(function(ok){
+      var ld=document.getElementById('authLoading');if(ld)ld.remove();
+      if(ok){
+        document.getElementById('loginGate').style.display='none';
+        document.getElementById('adminShell').style.display='flex';
+        document.getElementById('hdrEmail').textContent=user.email;
+        document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+        if(!_adminStarted){_adminStarted=true;loadAll();setupListeners();}
+      } else {
+        document.getElementById('loginGate').style.display='flex';
+        document.getElementById('adminShell').style.display='none';
+      }
+    });
   });
 });
+var _adminStarted=false;
 
 function doLogin(){
   const em=document.getElementById('lgEM').value.trim();
@@ -493,20 +505,14 @@ function doLogin(){
   err.style.display='none';
   const btn=document.querySelector('#loginGate .btn');
   btn.disabled=true; btn.textContent='Logging in...';
-  auth.signInWithEmailAndPassword(em,pw).then(cr=>{
-    if(cr.user.email!==ADMIN_EMAIL){
+  auth.signInWithEmailAndPassword(em,pw).then(cr=>isAdminUser(cr.user)).then(ok=>{
+    // onAuthStateChanged shows the dashboard for admins
+    if(!ok){
       auth.signOut();
       err.textContent='Access denied. Not an admin account.';
       err.style.display='block';
       btn.disabled=false; btn.textContent='Login to Admin Panel';
-      return;
     }
-    document.getElementById('loginGate').style.display='none';
-    document.getElementById('adminShell').style.display='flex';
-    document.getElementById('hdrEmail').textContent=cr.user.email;
-    document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    loadAll();
-    setupListeners();
   }).catch(e=>{
     err.textContent=e.code==='auth/wrong-password'||e.code==='auth/user-not-found'?'Invalid email or password':e.message;
     err.style.display='block';
@@ -517,11 +523,10 @@ function doLogout(){auth.signOut().then(()=>location.reload());}
 
 // ── LOAD ALL DATA FROM FIREBASE ──
 function loadAll(){
-  loadUsers();
-  loadDeposits();
-  loadWithdrawals();
+  // users/deposits/withdrawals arrive through setupListeners()
   loadWallets();
   loadBanners();
+  loadPlatformSettings();
 }
 
 function loadUsers(){
@@ -629,20 +634,20 @@ function updateDashCards(){
 function buildDashTbls(){
   const rdp=ALL_DEPOSITS.slice(0,6);
   document.getElementById('dash-dp').innerHTML=rdp.length?rdp.map(d=>`<tr>
-    <td style="font-weight:700;color:var(--accent)">${d.username||'—'}</td>
-    <td style="color:var(--green);font-weight:700">${d.amount} USDT</td>
+    <td style="font-weight:700;color:var(--accent)">${esc(d.username||'—')}</td>
+    <td style="color:var(--green);font-weight:700">${num(d.amount)} USDT</td>
     <td style="color:var(--muted);font-size:12px">${fT(d.createdAt)}</td>
-    <td><span class="badge b-${d.status}">${d.status}</span></td>
-    <td>${d.status==='pending'?`<button class="abtn approve" onclick="approveDP('${d.id}')">✓</button><button class="abtn reject" onclick="rejectReq('${d.id}','deposit')">✗</button>`:''}</td>
+    <td><span class="badge b-${stCls(d.status)}">${esc(d.status)}</span></td>
+    <td>${d.status==='pending'?`<button class="abtn approve" onclick="approveDP(${jsq(d.id)})">✓</button><button class="abtn reject" onclick="rejectReq(${jsq(d.id)},'deposit')">✗</button>`:''}</td>
   </tr>`).join(''):'<tr><td colspan="5" class="loading">No deposits yet</td></tr>';
 
   const rwd=ALL_WITHDRAWALS.slice(0,6);
   document.getElementById('dash-wd').innerHTML=rwd.length?rwd.map(w=>`<tr>
-    <td style="font-weight:700;color:var(--accent)">${w.username||'—'}</td>
-    <td style="color:var(--red);font-weight:700">${w.amount} USDT</td>
+    <td style="font-weight:700;color:var(--accent)">${esc(w.username||'—')}</td>
+    <td style="color:var(--red);font-weight:700">${num(w.amount)} USDT</td>
     <td style="color:var(--muted);font-size:12px">${fT(w.createdAt)}</td>
-    <td><span class="badge b-${w.status}">${w.status}</span></td>
-    <td>${w.status==='pending'?`<button class="abtn approve" onclick="approveWD('${w.id}')">✓</button><button class="abtn reject" onclick="rejectReq('${w.id}','withdrawal')">✗</button>`:''}</td>
+    <td><span class="badge b-${stCls(w.status)}">${esc(w.status)}</span></td>
+    <td>${w.status==='pending'?`<button class="abtn approve" onclick="approveWD(${jsq(w.id)})">✓</button><button class="abtn reject" onclick="rejectReq(${jsq(w.id)},'withdrawal')">✗</button>`:''}</td>
   </tr>`).join(''):'<tr><td colspan="5" class="loading">No withdrawals yet</td></tr>';
 }
 
@@ -660,21 +665,21 @@ function renderUsers(){
   document.getElementById('user-count-lbl').textContent=us.length+' players found';
   document.getElementById('uFooter').textContent=us.length+' users';
   document.getElementById('userTbl').innerHTML=us.length?us.map((u,i)=>{
-    const t=gT(u.rating||0);
+    const t=gT(num(u.rating));
     return`<tr>
       <td style="color:var(--muted);font-size:12px">${i+1}</td>
-      <td><span style="font-weight:800;color:var(--accent)">${u.username||'—'}</span></td>
-      <td style="color:var(--muted)">${u.email||'—'}</td>
+      <td><span style="font-weight:800;color:var(--accent)">${esc(u.username||'—')}</span></td>
+      <td style="color:var(--muted)">${esc(u.email||'—')}</td>
       <td><span class="${t.c}" style="font-size:12px;font-weight:700">${t.i} ${t.n}</span></td>
-      <td style="color:var(--accent);font-weight:700">${u.rating||0}</td>
-      <td><span style="color:var(--green);font-weight:700">${u.wins||0}W</span> <span style="color:var(--muted)">/</span> <span style="color:var(--red);font-weight:700">${u.losses||0}L</span></td>
-      <td style="color:var(--accent);font-weight:700">🪙 ${(u.coins||0).toLocaleString()}</td>
+      <td style="color:var(--accent);font-weight:700">${num(u.rating)}</td>
+      <td><span style="color:var(--green);font-weight:700">${num(u.wins)}W</span> <span style="color:var(--muted)">/</span> <span style="color:var(--red);font-weight:700">${num(u.losses)}L</span></td>
+      <td style="color:var(--accent);font-weight:700">🪙 ${num(u.coins).toLocaleString()}</td>
       <td style="color:var(--muted);font-size:12px">${fD(u.createdAt)}</td>
       <td><span class="badge ${u.emailVerified?'b-approved':'b-pending'}">${u.emailVerified?'✓ Verified':'⚠ Pending'}</span></td>
       <td><span class="badge ${u.status==='inactive'?'b-inactive':'b-active'}">${u.status==='inactive'?'Inactive':'Active'}</span></td>
       <td>
-        <button class="abtn view" onclick="openProfile('${u.id}')">View</button>
-        <button class="abtn ${u.status==='inactive'?'approve':'reject'}" onclick="toggleUserStatus('${u.id}','${u.status==='inactive'?'active':'inactive'}')">${u.status==='inactive'?'Activate':'Deactivate'}</button>
+        <button class="abtn view" onclick="openProfile(${jsq(u.id)})">View</button>
+        <button class="abtn ${u.status==='inactive'?'approve':'reject'}" onclick="toggleUserStatus(${jsq(u.id)},'${u.status==='inactive'?'active':'inactive'}')">${u.status==='inactive'?'Activate':'Deactivate'}</button>
       </td>
     </tr>`;
   }).join(''):'<tr><td colspan="11" class="loading">No users found</td></tr>';
@@ -851,6 +856,22 @@ function saveWallets(){
   }).catch(function(e){toast('Error: '+e.message,'er');});
 }
 
+// ── PLATFORM SETTINGS (settings/platform; minDeposit is enforced by the rules) ──
+function loadPlatformSettings(){
+  db.collection('settings').doc('platform').get().then(snap=>{
+    if(!snap.exists)return;
+    const d=snap.data();
+    if(d.feePercent!=null)document.getElementById('feeInput').value=d.feePercent;
+    if(d.minDeposit!=null)document.getElementById('minDepInput').value=d.minDeposit;
+  }).catch(()=>{});
+}
+function savePlatformSetting(field,inputId,min,max){
+  const v=parseFloat(document.getElementById(inputId).value);
+  if(isNaN(v)||v<min||v>max){toast('Enter a value between '+min+' and '+max,'er');return;}
+  db.collection('settings').doc('platform').set({[field]:v,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
+    .then(()=>toast('✓ Saved','ok')).catch(e=>toast('Error: '+e.message,'er'));
+}
+
 // ── HOMEPAGE BANNERS (3 fixed slots, one Firestore doc each) ──
 var _bannerSlots=[{image:'',link:''},{image:'',link:''},{image:'',link:''}];
 
@@ -942,7 +963,8 @@ function saveBanners(){
 function exportUsers(){
   const rows=[['Username','Email','Rating','Tier','Wins','Losses','Coins','Verified','Joined']];
   ALL_USERS.forEach(u=>rows.push([u.username||'',u.email||'',u.rating||0,gT(u.rating||0).n,u.wins||0,u.losses||0,u.coins||0,u.emailVerified?'Yes':'No',fD(u.createdAt)]));
-  const csv=rows.map(r=>r.join(',')).join('\n');
+  const cell=v=>{let t=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(t))t="'"+t;return'"'+t.replace(/"/g,'""')+'"';};
+  const csv=rows.map(r=>r.map(cell).join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='users_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
   toast('CSV exported','ok');
 }
@@ -1007,20 +1029,20 @@ function buildStmt(uid){
   const u=ALL_USERS.find(x=>x.id===uid);
   let bal=0;
   const rows=evts.map(e=>{
-    bal+=e.cr-e.dr;
+    bal+=num(e.cr)-num(e.dr);
     return`<tr>
       <td style="color:var(--muted)">${fD(e.date)}</td>
       <td><span class="badge ${e.typeClass}">${e.type}</span></td>
-      <td style="color:var(--muted);font-size:12px">${e.desc}</td>
-      <td class="cr">${e.cr>0?'+'+e.cr.toLocaleString():''}</td>
-      <td class="dr">${e.dr>0?'-'+e.dr.toLocaleString():''}</td>
-      <td style="color:var(--accent);font-weight:700">${bal.toLocaleString()}</td>
+      <td style="color:var(--muted);font-size:12px">${esc(e.desc)}</td>
+      <td class="cr">${e.cr>0?'+'+num(e.cr).toLocaleString():''}</td>
+      <td class="dr">${e.dr>0?'-'+num(e.dr).toLocaleString():''}</td>
+      <td style="color:var(--accent);font-weight:700">${num(bal).toLocaleString()}</td>
     </tr>`;
   });
   if(rows.length>0){
     rows.push(`<tr style="background:rgba(0,231,1,.04);border-top:2px solid var(--accent)">
       <td colspan="5" style="font-weight:800;color:var(--accent);text-align:right;padding-right:12px">Current Balance (from Firebase):</td>
-      <td style="color:var(--accent);font-weight:800;font-size:15px">${(u?u.coins||0:0).toLocaleString()} COINS</td>
+      <td style="color:var(--accent);font-weight:800;font-size:15px">${num(u&&u.coins).toLocaleString()} COINS</td>
     </tr>`);
   }
   document.getElementById('um-stmt-body').innerHTML=rows.length?rows.join(''):'<tr><td colspan="6" class="loading">No transactions yet</td></tr>';
@@ -1030,11 +1052,11 @@ function buildDepsTab(uid){
   const ds=ALL_DEPOSITS.filter(d=>d.userId===uid);
   document.getElementById('um-deps-body').innerHTML=ds.length?ds.map(d=>`<tr>
     <td style="color:var(--muted)">${fD(d.createdAt)}</td>
-    <td style="color:var(--green);font-weight:700">${d.amount} USDT</td>
-    <td style="color:var(--muted);font-size:11px">${d.txid?d.txid.substring(0,20)+'...':'—'}</td>
-    <td style="color:var(--muted)">${d.note||'—'}</td>
-    <td><span class="badge b-${d.status}">${d.status}</span></td>
-    <td>${d.status==='pending'?`<button class="abtn approve" onclick="approveDP('${d.id}')">Approve</button><button class="abtn reject" onclick="rejectReq('${d.id}','deposit')">Reject</button>`:''}</td>
+    <td style="color:var(--green);font-weight:700">${num(d.amount)} USDT</td>
+    <td style="color:var(--muted);font-size:11px">${esc(d.txid?d.txid.substring(0,20)+'...':'—')}</td>
+    <td style="color:var(--muted)">${esc(d.note||'—')}</td>
+    <td><span class="badge b-${stCls(d.status)}">${esc(d.status)}</span></td>
+    <td>${d.status==='pending'?`<button class="abtn approve" onclick="approveDP(${jsq(d.id)})">Approve</button><button class="abtn reject" onclick="rejectReq(${jsq(d.id)},'deposit')">Reject</button>`:''}</td>
   </tr>`).join(''):'<tr><td colspan="6" class="loading">No deposits</td></tr>';
 }
 
@@ -1042,10 +1064,10 @@ function buildWdsTab(uid){
   const ws=ALL_WITHDRAWALS.filter(w=>w.userId===uid);
   document.getElementById('um-wds-body').innerHTML=ws.length?ws.map(w=>`<tr>
     <td style="color:var(--muted)">${fD(w.createdAt)}</td>
-    <td style="color:var(--red);font-weight:700">${w.amount} USDT</td>
-    <td style="color:var(--muted);font-size:11px">${w.wallet?w.wallet.substring(0,20)+'...':'—'}</td>
-    <td><span class="badge b-${w.status}">${w.status}</span></td>
-    <td>${w.status==='pending'?`<button class="abtn approve" onclick="approveWD('${w.id}')">Approve</button><button class="abtn reject" onclick="rejectReq('${w.id}','withdrawal')">Reject</button>`:''}</td>
+    <td style="color:var(--red);font-weight:700">${num(w.amount)} USDT</td>
+    <td style="color:var(--muted);font-size:11px">${esc(w.wallet?w.wallet.substring(0,20)+'...':'—')}</td>
+    <td><span class="badge b-${stCls(w.status)}">${esc(w.status)}</span></td>
+    <td>${w.status==='pending'?`<button class="abtn approve" onclick="approveWD(${jsq(w.id)})">Approve</button><button class="abtn reject" onclick="rejectReq(${jsq(w.id)},'withdrawal')">Reject</button>`:''}</td>
   </tr>`).join(''):'<tr><td colspan="5" class="loading">No withdrawals</td></tr>';
 }
 
@@ -1071,8 +1093,15 @@ function adjCoins(dir){
   const u=ALL_USERS.find(x=>x.id===activeUID);if(!u)return;
   const amt=parseFloat(document.getElementById('coinAdj').value)||0;
   if(!amt||amt<=0){toast('Enter a valid amount','er');return;}
-  const newCoins=Math.max(0,(u.coins||0)+(dir>0?amt:-amt));
-  db.collection('users').doc(activeUID).set({coins:newCoins},{merge:true}).then(()=>{
+  // Read the live balance in a transaction so a concurrent change (a game
+  // result, a deposit approval) isn't overwritten by a stale local value
+  const userRef=db.collection('users').doc(activeUID);
+  db.runTransaction(tx=>tx.get(userRef).then(snap=>{
+    const live=snap.exists?num(snap.data().coins):0;
+    const next=Math.max(0,live+(dir>0?amt:-amt));
+    tx.set(userRef,{coins:next},{merge:true});
+    return next;
+  })).then(newCoins=>{
     u.coins=newCoins;
     document.getElementById('um-bal').textContent=newCoins.toLocaleString()+' COINS';
     document.getElementById('coinAdj').value='';
@@ -1126,15 +1155,15 @@ function renderDeposits(){
   else if(so==='lo')ds.sort((a,b)=>a.amount-b.amount);
   document.getElementById('dpFooter').textContent=ds.length+' records';
   document.getElementById('dpTbl').innerHTML=ds.length?ds.map(d=>`<tr>
-    <td style="color:var(--muted);font-size:11px;font-weight:700">${d.id.substring(0,12)}</td>
-    <td style="font-weight:800;color:var(--accent);cursor:pointer" onclick="openProfile('${d.userId||''}')">${d.username||'—'}</td>
-    <td style="color:var(--green);font-weight:700">${d.amount} USDT</td>
-    <td style="color:var(--muted);font-size:12px">${d.txid?d.txid.substring(0,18)+'...':'—'} <button class="abtn" style="font-size:9px" onclick="copyT('${d.txid||''}')">Copy</button></td>
+    <td style="color:var(--muted);font-size:11px;font-weight:700">${esc(d.id.substring(0,12))}</td>
+    <td style="font-weight:800;color:var(--accent);cursor:pointer" onclick="openProfile(${jsq(d.userId||'')})">${esc(d.username||'—')}</td>
+    <td style="color:var(--green);font-weight:700">${num(d.amount)} USDT</td>
+    <td style="color:var(--muted);font-size:12px">${esc(d.txid?d.txid.substring(0,18)+'...':'—')} <button class="abtn" style="font-size:9px" onclick="copyT(${jsq(d.txid||'')})">Copy</button></td>
     <td style="color:var(--muted);font-size:12px">${fT(d.createdAt)}</td>
-    <td><span class="badge b-${d.status}">${d.status}</span></td>
+    <td><span class="badge b-${stCls(d.status)}">${esc(d.status)}</span></td>
     <td>
-      ${d.status==='pending'?`<button class="abtn approve" onclick="approveDP('${d.id}')">✓ Approve</button><button class="abtn reject" onclick="rejectReq('${d.id}','deposit')">✗ Reject</button>`:''}
-      <button class="abtn view" onclick="viewReq('${d.id}','deposit')">View</button>
+      ${d.status==='pending'?`<button class="abtn approve" onclick="approveDP(${jsq(d.id)})">✓ Approve</button><button class="abtn reject" onclick="rejectReq(${jsq(d.id)},'deposit')">✗ Reject</button>`:''}
+      <button class="abtn view" onclick="viewReq(${jsq(d.id)},'deposit')">View</button>
     </td>
   </tr>`).join(''):'<tr><td colspan="7" class="loading">No deposits found</td></tr>';
 }
@@ -1187,15 +1216,15 @@ function renderWithdrawals(){
   if(so==='hi')ws.sort((a,b)=>b.amount-a.amount);
   document.getElementById('wdFooter').textContent=ws.length+' records';
   document.getElementById('wdTbl').innerHTML=ws.length?ws.map(w=>`<tr>
-    <td style="color:var(--muted);font-size:11px;font-weight:700">${w.id.substring(0,12)}</td>
-    <td style="font-weight:800;color:var(--accent);cursor:pointer" onclick="openProfile('${w.userId||''}')">${w.username||'—'}</td>
-    <td style="color:var(--red);font-weight:700">${w.amount} USDT</td>
-    <td style="color:var(--muted);font-size:12px">${w.wallet?w.wallet.substring(0,18)+'...':'—'} <button class="abtn" style="font-size:9px" onclick="copyT('${w.wallet||''}')">Copy</button></td>
+    <td style="color:var(--muted);font-size:11px;font-weight:700">${esc(w.id.substring(0,12))}</td>
+    <td style="font-weight:800;color:var(--accent);cursor:pointer" onclick="openProfile(${jsq(w.userId||'')})">${esc(w.username||'—')}</td>
+    <td style="color:var(--red);font-weight:700">${num(w.amount)} USDT</td>
+    <td style="color:var(--muted);font-size:12px">${esc(w.wallet?w.wallet.substring(0,18)+'...':'—')} <button class="abtn" style="font-size:9px" onclick="copyT(${jsq(w.wallet||'')})">Copy</button></td>
     <td style="color:var(--muted);font-size:12px">${fT(w.createdAt)}</td>
-    <td><span class="badge b-${w.status}">${w.status}</span></td>
+    <td><span class="badge b-${stCls(w.status)}">${esc(w.status)}</span></td>
     <td>
-      ${w.status==='pending'?`<button class="abtn approve" onclick="approveWD('${w.id}')">✓ Approve</button><button class="abtn reject" onclick="rejectReq('${w.id}','withdrawal')">✗ Reject</button>`:''}
-      <button class="abtn view" onclick="viewReq('${w.id}','withdrawal')">View</button>
+      ${w.status==='pending'?`<button class="abtn approve" onclick="approveWD(${jsq(w.id)})">✓ Approve</button><button class="abtn reject" onclick="rejectReq(${jsq(w.id)},'withdrawal')">✗ Reject</button>`:''}
+      <button class="abtn view" onclick="viewReq(${jsq(w.id)},'withdrawal')">View</button>
     </td>
   </tr>`).join(''):'<tr><td colspan="7" class="loading">No withdrawals found</td></tr>';
 }
@@ -1237,18 +1266,18 @@ function viewReq(id,type){
   document.getElementById('rModalTitle').textContent=(type==='deposit'?'💰 Deposit':'💸 Withdrawal')+' — '+r.id.substring(0,16);
   document.getElementById('rModalBody').innerHTML=`
     <div class="info-grid">
-      <div class="ig"><div class="ig-lbl">Username</div><div class="ig-val gold">${r.username||'—'}</div></div>
-      <div class="ig"><div class="ig-lbl">Amount</div><div class="ig-val ${type==='deposit'?'green':'red'}">${r.amount} USDT</div></div>
-      <div class="ig"><div class="ig-lbl">Status</div><div class="ig-val"><span class="badge b-${r.status}">${r.status}</span></div></div>
-      <div class="ig" style="grid-column:1/-1"><div class="ig-lbl">${type==='deposit'?'Transaction ID':'Wallet Address'}</div><div class="ig-val" style="font-size:12px;word-break:break-all;font-weight:600">${type==='deposit'?(r.txid||'—'):(r.wallet||'—')}</div></div>
+      <div class="ig"><div class="ig-lbl">Username</div><div class="ig-val gold">${esc(r.username||'—')}</div></div>
+      <div class="ig"><div class="ig-lbl">Amount</div><div class="ig-val ${type==='deposit'?'green':'red'}">${num(r.amount)} USDT</div></div>
+      <div class="ig"><div class="ig-lbl">Status</div><div class="ig-val"><span class="badge b-${stCls(r.status)}">${esc(r.status)}</span></div></div>
+      <div class="ig" style="grid-column:1/-1"><div class="ig-lbl">${type==='deposit'?'Transaction ID':'Wallet Address'}</div><div class="ig-val" style="font-size:12px;word-break:break-all;font-weight:600">${esc(type==='deposit'?(r.txid||'—'):(r.wallet||'—'))}</div></div>
       <div class="ig"><div class="ig-lbl">Submitted</div><div class="ig-val" style="font-size:13px">${fT(r.createdAt)}</div></div>
-      <div class="ig"><div class="ig-lbl">Email</div><div class="ig-val" style="font-size:12px">${r.email||'—'}</div></div>
-      <div class="ig"><div class="ig-lbl">Note</div><div class="ig-val" style="font-size:13px">${r.note||'—'}</div></div>
+      <div class="ig"><div class="ig-lbl">Email</div><div class="ig-val" style="font-size:12px">${esc(r.email||'—')}</div></div>
+      <div class="ig"><div class="ig-lbl">Note</div><div class="ig-val" style="font-size:13px">${esc(r.note||'—')}</div></div>
     </div>
     ${r.status==='pending'?`<div style="display:flex;gap:10px;margin-top:16px">
-      <button class="btn btn-green" onclick="${type==='deposit'?`approveDP('${id}')`:` approveWD('${id}')`};closeRModal()">✓ Approve</button>
-      <button class="btn btn-red" onclick="rejectReq('${id}','${type}');closeRModal()">✗ Reject</button>
-    </div>`:'<div style="margin-top:12px;color:var(--muted);font-size:13px">This request has already been '+r.status+'.</div>'}`;
+      <button class="btn btn-green" onclick="${type==='deposit'?`approveDP(${jsq(id)})`:`approveWD(${jsq(id)})`};closeRModal()">✓ Approve</button>
+      <button class="btn btn-red" onclick="rejectReq(${jsq(id)},${jsq(type)});closeRModal()">✗ Reject</button>
+    </div>`:'<div style="margin-top:12px;color:var(--muted);font-size:13px">This request has already been '+esc(r.status)+'.</div>'}`;
   document.getElementById('rModal').classList.add('show');
 }
 function closeRModal(){document.getElementById('rModal').classList.remove('show');}
