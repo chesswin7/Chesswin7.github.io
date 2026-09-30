@@ -1158,7 +1158,7 @@ function renderDeposits(){
     <td style="color:var(--muted);font-size:11px;font-weight:700">${esc(d.id.substring(0,12))}</td>
     <td style="font-weight:800;color:var(--accent);cursor:pointer" onclick="openProfile(${jsq(d.userId||'')})">${esc(d.username||'—')}</td>
     <td style="color:var(--green);font-weight:700">${num(d.amount)} USDT</td>
-    <td style="color:var(--muted);font-size:12px">${esc(d.txid?d.txid.substring(0,18)+'...':'—')} <button class="abtn" style="font-size:9px" onclick="copyT(${jsq(d.txid||'')})">Copy</button></td>
+    <td style="color:var(--muted);font-size:12px">${esc(d.txid?d.txid.substring(0,18)+'...':'—')} <button class="abtn" style="font-size:9px" onclick="copyT(${jsq(d.txid||'')})">Copy</button>${txExplorerUrl(d.txid)?` <a class="abtn" style="font-size:9px;text-decoration:none" target="_blank" rel="noopener noreferrer" href="${esc(txExplorerUrl(d.txid))}">Tronscan</a>`:''}${txBadge(d)}</td>
     <td style="color:var(--muted);font-size:12px">${fT(d.createdAt)}</td>
     <td><span class="badge b-${stCls(d.status)}">${esc(d.status)}</span></td>
     <td>
@@ -1168,10 +1168,26 @@ function renderDeposits(){
   </tr>`).join(''):'<tr><td colspan="7" class="loading">No deposits found</td></tr>';
 }
 
+// ── TxID checks: the same transaction submitted more than once is the
+// easiest way to get paid twice for one deposit ──
+function normTx(t){return String(t||'').trim().toLowerCase();}
+function sameTxDeposits(d){const t=normTx(d.txid);return t?ALL_DEPOSITS.filter(x=>x.id!==d.id&&normTx(x.txid)===t):[];}
+function txBadge(d){
+  const others=sameTxDeposits(d);
+  if(!others.length)return'';
+  const approved=others.some(x=>x.status==='approved');
+  return` <span class="badge ${approved?'b-rejected':'b-pending'}" title="This TxID is used by ${others.length} other deposit(s)">⚠ ${approved?'TxID already credited':'Duplicate TxID'}</span>`;
+}
+// TRON (TRC20) transaction ids are 64 hex characters without 0x
+function txExplorerUrl(t){t=String(t||'').trim();return/^[0-9a-fA-F]{64}$/.test(t)?'https://tronscan.org/#/transaction/'+t:'';}
+
 function approveDP(id){
   const d=ALL_DEPOSITS.find(x=>x.id===id);
   if(!d||d.status!=='pending'){toast('Already processed','info');return;}
-  if(!confirm('Approve deposit of '+d.amount+' USDT for '+d.username+'?'))return;
+  const dups=sameTxDeposits(d);
+  if(dups.some(x=>x.status==='approved')){toast('Blocked: this TxID was already credited on another deposit','er');return;}
+  if(dups.length&&!confirm('⚠ This TxID is also used by '+dups.length+' other pending deposit(s). Only one of them can be genuine.\n\nContinue?'))return;
+  if(!confirm('Approve deposit of '+d.amount+' USDT for '+d.username+'?\n\nOnly approve after checking on the blockchain that this transaction paid our wallet the full amount.'))return;
   const depRef=db.collection('deposits').doc(id);
   db.runTransaction(function(tx){
     return tx.get(depRef).then(function(depSnap){
@@ -1269,7 +1285,7 @@ function viewReq(id,type){
       <div class="ig"><div class="ig-lbl">Username</div><div class="ig-val gold">${esc(r.username||'—')}</div></div>
       <div class="ig"><div class="ig-lbl">Amount</div><div class="ig-val ${type==='deposit'?'green':'red'}">${num(r.amount)} USDT</div></div>
       <div class="ig"><div class="ig-lbl">Status</div><div class="ig-val"><span class="badge b-${stCls(r.status)}">${esc(r.status)}</span></div></div>
-      <div class="ig" style="grid-column:1/-1"><div class="ig-lbl">${type==='deposit'?'Transaction ID':'Wallet Address'}</div><div class="ig-val" style="font-size:12px;word-break:break-all;font-weight:600">${esc(type==='deposit'?(r.txid||'—'):(r.wallet||'—'))}</div></div>
+      <div class="ig" style="grid-column:1/-1"><div class="ig-lbl">${type==='deposit'?'Transaction ID':'Wallet Address'}</div><div class="ig-val" style="font-size:12px;word-break:break-all;font-weight:600">${esc(type==='deposit'?(r.txid||'—'):(r.wallet||'—'))}${type==='deposit'?txBadge(r):''}${type==='deposit'&&txExplorerUrl(r.txid)?`<div style="margin-top:6px"><a target="_blank" rel="noopener noreferrer" style="color:var(--accent)" href="${esc(txExplorerUrl(r.txid))}">🔎 Check this transaction on Tronscan</a></div>`:''}</div></div>
       <div class="ig"><div class="ig-lbl">Submitted</div><div class="ig-val" style="font-size:13px">${fT(r.createdAt)}</div></div>
       <div class="ig"><div class="ig-lbl">Email</div><div class="ig-val" style="font-size:12px">${esc(r.email||'—')}</div></div>
       <div class="ig"><div class="ig-lbl">Note</div><div class="ig-val" style="font-size:13px">${esc(r.note||'—')}</div></div>
