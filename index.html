@@ -1429,8 +1429,13 @@ function resetMatchButton() {
 }
 function makeSafeEl(tag,cls,text){var el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=safeText(text);return el;}
 var WORKER_URL='https://chesswin7-email.jmchelp1.workers.dev';
+// The email worker only accepts signed-in players: send the Firebase ID
+// token in the body (not a header, so no extra CORS preflight is needed)
 function sendEmail(payload){
-  return fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  var tokenP=window.currentUser?window.currentUser.getIdToken():Promise.resolve(null);
+  return tokenP.then(function(t){
+    return fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({idToken:t},payload))});
+  })
     .then(function(r){return r.json();}).catch(function(e){console.warn('Email send failed:',e);return{error:e.message};});
 }
 // ── CHESS ENGINE ──
