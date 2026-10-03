@@ -1428,16 +1428,6 @@ function resetMatchButton() {
   if (stEl) stEl.style.display = 'none';
 }
 function makeSafeEl(tag,cls,text){var el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=safeText(text);return el;}
-var WORKER_URL='https://chesswin7-email.jmchelp1.workers.dev';
-// The email worker only accepts signed-in players: send the Firebase ID
-// token in the body (not a header, so no extra CORS preflight is needed)
-function sendEmail(payload){
-  var tokenP=window.currentUser?window.currentUser.getIdToken():Promise.resolve(null);
-  return tokenP.then(function(t){
-    return fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({idToken:t},payload))});
-  })
-    .then(function(r){return r.json();}).catch(function(e){console.warn('Email send failed:',e);return{error:e.message};});
-}
 // ── CHESS ENGINE ──
 var V={K:20000,Q:900,R:500,B:330,N:320,P:100};
 var PP=[0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0];
@@ -2299,7 +2289,6 @@ function submitDeposit(){
     toast('✓ Deposit request submitted!','ok');
     document.getElementById('dpAmt').value='';document.getElementById('dpTx').value='';document.getElementById('dpNote').value='';
     loadDepositHistory();
-    sendEmail({action:'notify-deposit',username:safeText(window.currentUserData?window.currentUserData.username:''),userEmail:safeText(window.currentUser.email),amount:amt,txid:tx});
   }).catch(function(e){toast(e.message,'err');});
 }
 function submitWithdrawal(){
@@ -2328,7 +2317,6 @@ function submitWithdrawal(){
       toast('Withdrawal request submitted! Pending admin approval.','ok');
       document.getElementById('wdAmt').value='';document.getElementById('wdWallet').value='';
       loadWithdrawalHistory();
-      sendEmail({action:'notify-withdrawal',username:safeText(window.currentUserData?window.currentUserData.username:''),userEmail:safeText(window.currentUser.email),amount:amt,wallet:wallet});
     });
   }).catch(function(e){toast(e.message,'err');});
 }
