@@ -328,6 +328,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
             <div id="walletList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>
             <button class="btn" style="width:100%" onclick="saveWallets()">💾 Save All Wallets</button>
           </div>
+          <div class="tbl-wrap" style="padding:20px;grid-column:1/-1">
+            <div style="font-size:13px;font-weight:700;color:var(--accent)">Homepage Video &amp; Social Links</div>
+            <div style="font-size:12px;color:var(--muted);margin:3px 0 12px">Leave a box empty to hide it on the site. Links must start with https://</div>
+            <div style="display:grid;grid-template-columns:110px 1fr;gap:8px 10px;align-items:center">
+              <label style="font-size:12px;font-weight:700">YouTube video</label><input id="siteYoutube" class="set-input" style="width:100%" placeholder="https://www.youtube.com/watch?v=...">
+              <label style="font-size:12px;font-weight:700">Instagram</label><input id="siteInstagram" class="set-input" style="width:100%" placeholder="https://instagram.com/yourpage">
+              <label style="font-size:12px;font-weight:700">Facebook</label><input id="siteFacebook" class="set-input" style="width:100%" placeholder="https://facebook.com/yourpage">
+              <label style="font-size:12px;font-weight:700">X (Twitter)</label><input id="siteTwitter" class="set-input" style="width:100%" placeholder="https://x.com/yourpage">
+              <label style="font-size:12px;font-weight:700">Threads</label><input id="siteThreads" class="set-input" style="width:100%" placeholder="https://threads.net/@yourpage">
+            </div>
+            <button class="btn" style="width:100%;margin-top:12px" onclick="saveSiteLinks()">💾 Save Video &amp; Links</button>
+          </div>
           <div class="tbl-wrap" style="padding:20px">
             <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">Change Admin Password</div>
             <input type="password" placeholder="New password" class="set-input" id="newAdminPw" style="width:100%;margin-bottom:10px">
@@ -527,6 +539,7 @@ function loadAll(){
   loadWallets();
   loadBanners();
   loadPlatformSettings();
+  loadSiteLinks();
 }
 
 function loadUsers(){
@@ -857,6 +870,31 @@ function saveWallets(){
 }
 
 // ── PLATFORM SETTINGS (settings/platform; minDeposit is enforced by the rules) ──
+// ── HOMEPAGE VIDEO & SOCIAL LINKS (settings/site) ──
+const SITE_LINK_FIELDS={youtube:'siteYoutube',instagram:'siteInstagram',facebook:'siteFacebook',twitter:'siteTwitter',threads:'siteThreads'};
+// Same parser as the homepage: returns the 11-character video id or ''
+function youTubeId(url){
+  const m=String(url||'').trim().match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:'';
+}
+function loadSiteLinks(){
+  db.collection('settings').doc('site').get().then(snap=>{
+    const d=snap.exists?snap.data():{};
+    Object.entries(SITE_LINK_FIELDS).forEach(([k,id])=>{document.getElementById(id).value=d[k]||'';});
+  }).catch(()=>{});
+}
+function saveSiteLinks(){
+  const data={};
+  for(const [k,id] of Object.entries(SITE_LINK_FIELDS)){
+    const v=document.getElementById(id).value.trim();
+    if(v&&!/^https:\/\/[^\s"'<>]+$/.test(v)){toast('The '+k+' link must start with https://','er');return;}
+    if(k==='youtube'&&v&&!youTubeId(v)){toast('That is not a YouTube video link','er');return;}
+    data[k]=v;
+  }
+  data.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('settings').doc('site').set(data,{merge:true})
+    .then(()=>toast('✓ Saved — visible on the homepage now','ok')).catch(e=>toast('Error: '+e.message,'er'));
+}
 function loadPlatformSettings(){
   db.collection('settings').doc('platform').get().then(snap=>{
     if(!snap.exists)return;
