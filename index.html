@@ -321,13 +321,17 @@ header{padding:0 14px;gap:8px}
 #h-ranks span{height:min(10.2vw,44px)!important;font-size:8px!important}
 #h-files span{width:min(10.2vw,44px)!important;font-size:8px!important}
 #h-ranks{width:13px!important;flex-shrink:0}
-.stats-bar{grid-template-columns:1fr}
-.stat-val{font-size:24px}
-.stat-item{padding:16px;border-right:none;border-bottom:1px solid var(--border)}
-.stat-item:last-child{border-bottom:none}
+.stats-bar{grid-template-columns:repeat(3,1fr)}
+.stat-val{font-size:20px}
+.stat-label{font-size:9px;letter-spacing:.02em}
+.stat-item{padding:14px 4px;border-right:1px solid var(--border);border-bottom:none}
+.stat-item:last-child{border-right:none}
 .mini-boards-section{padding:24px 0}
-.mini-boards-inner{padding:0 12px}
-.mini-row{grid-template-columns:repeat(2,1fr);gap:10px}
+.mini-boards-inner{padding:0 4px}
+.mini-row{grid-template-columns:repeat(2,1fr);gap:6px}
+.mini-card{padding:4px}
+.mini-board{margin-bottom:4px}
+.mini-label{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cards-grid{grid-template-columns:1fr;gap:14px}
 .lb-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .lb-head{grid-template-columns:44px 100px 90px 62px 50px 74px;min-width:420px}
@@ -384,10 +388,11 @@ header{padding:0 8px}
 #hdrBoxGrid{gap:3px 4px!important}
 .logo{font-size:14px}
 .hero h1{font-size:22px}
-.stats-bar{grid-template-columns:1fr}
-.stat-item{border-right:none;border-bottom:1px solid var(--border);padding:16px}
-.stat-item:last-child{border-bottom:none}
-.mini-row{grid-template-columns:repeat(2,1fr);gap:10px}
+.stats-bar{grid-template-columns:repeat(3,1fr)}
+.stat-val{font-size:18px}
+.stat-item{border-right:1px solid var(--border);border-bottom:none;padding:12px 2px}
+.stat-item:last-child{border-right:none}
+.mini-row{grid-template-columns:repeat(2,1fr);gap:6px}
 .lb-wrap{overflow-x:hidden}
 .lb-head{grid-template-columns:26px minmax(0,80px) 40px 34px 24px minmax(44px,1fr);column-gap:6px;min-width:0}
 .lb-row{grid-template-columns:26px minmax(0,80px) 40px 34px 24px minmax(44px,1fr);column-gap:6px;min-width:0}
@@ -1096,7 +1101,13 @@ function _removeLoadBar(){
 </main>
 </div>
 <!-- CRISP LIVE CHAT -->
-<script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="9996f609-6558-45c0-9897-c0af3e17540b";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+<script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="9996f609-6558-45c0-9897-c0af3e17540b";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();
+// Mobile: no floating chat bubble (the footer's "24/7 Help" button opens the chat instead)
+function isMobileView(){return window.matchMedia('(max-width:900px)').matches;}
+function hideCrispOnMobile(){if(isMobileView())window.$crisp.push(['do','chat:hide']);}
+window.$crisp.push(['on','session:loaded',hideCrispOnMobile]);
+window.$crisp.push(['on','chat:closed',hideCrispOnMobile]);
+hideCrispOnMobile();</script>
 <div id="supportModal" style="display:none"></div>
 <script>
 function safeText(s){return String(s||'');}
@@ -1708,11 +1719,13 @@ var MINI_THEMES=[
   {dark:'#0d5c50',light:'#1abc9c'},{dark:'#6e2d00',light:'#e67e22'},{dark:'#1a0d5c',light:'#5b6dd4'},{dark:'#3a4a00',light:'#8aaa20'}
 ];
 function fakeBoardPos(){var b=mkB(),t='w',ep=null,cr={wK:1,wQ:1,bK:1,bQ:1};for(var i=0;i<5+Math.floor(Math.random()*18);i++){var mv=allL(t,b,ep,cr);if(!mv.length)break;var m=mv[Math.floor(Math.random()*mv.length)],res=applyM(m,b,ep,cr);b=res.b;ep=res.ep;cr=res.cr;t=Op(t);}return b;}
+var NAMES_W=['KingMosin','DubaiKnight','GoldBishop','BlitzKing','QueenGambit','NightRider','PawnStorm','TacticalFox'];
+var NAMES_B=['SilverRook','CastleRush','EndgameWiz','PinAndFork','ZugzwangK','BishopPair','GrandPatzer','DesertKnight'];
 var _miniBoards=[];
 function renderMiniBoard(data){var mb=data.el;mb.innerHTML='';mb.style.position='relative';for(var i=0;i<64;i++){var r=Rw(i),c=Cw(i);var sq=document.createElement('div');sq.className='mini-sq';sq.dataset.idx=i;sq.style.cssText='background:'+(((r+c)%2===0)?data.th.dark:data.th.light)+';position:relative;overflow:hidden';if(data.board[i]){var sp=document.createElement('img');var pk=data.board[i].c+data.board[i].n.toLowerCase();sp.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';sp.alt=pk;sp.style.cssText='width:88%;height:88%;object-fit:contain;display:block;margin:auto;transition:opacity 0.5s ease,transform 0.5s ease';sq.appendChild(sp);}mb.appendChild(sq);}}
 function updateMiniSquare(mb,idx,piece,th,fadeIn){var sqs=mb.querySelectorAll('.mini-sq');var sq=sqs[idx];if(!sq)return;var old=sq.querySelector('img');if(old){old.style.opacity='0';old.style.transform='scale(0.5)';setTimeout(function(){if(old.parentNode)old.parentNode.removeChild(old);},400);}if(piece){setTimeout(function(){var sp=document.createElement('img');var pk=piece.c+piece.n.toLowerCase();sp.src='https://images.chesscomfiles.com/chess-themes/pieces/neo/150/'+pk+'.png';sp.alt=pk;sp.style.cssText='width:88%;height:88%;object-fit:contain;display:block;margin:auto;transition:opacity 0.5s ease,transform 0.5s ease;opacity:0;transform:scale(0.5)';sq.appendChild(sp);requestAnimationFrame(function(){requestAnimationFrame(function(){sp.style.opacity='1';sp.style.transform='scale(1)';});});},fadeIn?200:0);}}
 function animateMiniBoard(data){var col=data.turn;var mvs=allL(col,data.board,data.ep,data.cr);if(!mvs.length){var newPos=fakeBoardPos();data.board=newPos;data.turn='w';data.ep=null;data.cr={wK:1,wQ:1,bK:1,bQ:1};renderMiniBoard(data);return;}var mv=mvs[Math.floor(Math.random()*mvs.length)];var mb=data.el;updateMiniSquare(mb,mv.f,null,data.th,false);setTimeout(function(){var res=applyM(mv,data.board,data.ep,data.cr);data.board=res.b;data.ep=res.ep;data.cr=res.cr;data.turn=Op(col);updateMiniSquare(mb,mv.t,data.board[mv.t],data.th,true);},450);}
-function buildMiniBoard(container,themeIdx){var pos=fakeBoardPos(),th=MINI_THEMES[themeIdx%12];var wrap=document.createElement('div');wrap.className='mini-card';var lbl=document.createElement('div');lbl.className='mini-label';lbl.style.color=th.light;lbl.textContent='Demo board';var mb=document.createElement('div');mb.className='mini-board';var sub=document.createElement('div');sub.className='mini-sub';sub.textContent='Example position';wrap.appendChild(lbl);wrap.appendChild(mb);wrap.appendChild(sub);container.appendChild(wrap);var data={el:mb,board:pos,th:th,turn:'w',ep:null,cr:{wK:1,wQ:1,bK:1,bQ:1},animSq:-1};renderMiniBoard(data);_miniBoards.push(data);}
+function buildMiniBoard(container,themeIdx){var pos=fakeBoardPos(),th=MINI_THEMES[themeIdx%12];var wrap=document.createElement('div');wrap.className='mini-card';var lbl=document.createElement('div');lbl.className='mini-label';lbl.style.color=th.light;lbl.textContent=NAMES_W[Math.floor(Math.random()*NAMES_W.length)]+' vs '+NAMES_B[Math.floor(Math.random()*NAMES_B.length)];var mb=document.createElement('div');mb.className='mini-board';var sub=document.createElement('div');sub.className='mini-sub';sub.textContent='Example game';wrap.appendChild(lbl);wrap.appendChild(mb);wrap.appendChild(sub);container.appendChild(wrap);var data={el:mb,board:pos,th:th,turn:'w',ep:null,cr:{wK:1,wQ:1,bK:1,bQ:1},animSq:-1};renderMiniBoard(data);_miniBoards.push(data);}
 function buildMiniBoards(){_miniBoards=[];['rowGold','rowSilver','rowBronze'].forEach(function(id,ri){var row=document.getElementById(id);if(!row)return;row.innerHTML='';for(var i=0;i<4;i++)buildMiniBoard(row,ri*4+i);});_miniBoards.forEach(function(data,i){setInterval(function(){try{animateMiniBoard(data);}catch(e){}},2800+i*300);});}
 var TIERS=[
   {n:'Bronze',i:'🥉',min:0,max:9},
@@ -2430,7 +2443,7 @@ function updateMobDrawer(user,data){
     buildMobLangGrid();
   }else{if(gLinks)gLinks.style.display='block';if(aLinks)aLinks.style.display='none';if(mobUser)mobUser.style.display='none';}
 }
-function openSupport(){if(window.$crisp){window.$crisp.push(['do','chat:open']);}}
+function openSupport(){if(window.$crisp){window.$crisp.push(['do','chat:show']);window.$crisp.push(['do','chat:open']);}}
 var ro=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.1});
 document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
 // Fallback: if a .reveal element never intersects (e.g. hidden ancestor at load time), force it visible after 1.5s so content never stays stuck hidden.
