@@ -197,8 +197,6 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 .video-card{max-width:760px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
 .video-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:#000}
 .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.video-link{display:block;text-align:center;font-size:12px;font-weight:700;color:var(--muted);margin-top:8px;text-decoration:none}
-.video-link:hover{color:var(--accent)}
 .footer-links a{color:var(--muted);cursor:pointer;font-weight:600;transition:color .15s}
 .footer-links a:hover{color:var(--accent)}
 .faq-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
@@ -724,8 +722,7 @@ function _removeLoadBar(){
     </div>
   </div>
   <div class="video-section" id="siteVideo" style="display:none">
-    <div class="video-card"><div class="video-frame" id="siteVideoFrame"></div>
-      <a class="video-link" id="siteVideoLink" target="_blank" rel="noopener noreferrer">▶ Watch on YouTube</a></div>
+    <div class="video-card"><div class="video-frame" id="siteVideoFrame"></div></div>
   </div>
   <div class="section" id="arena">
     <p class="section-tag" id="arenaTag">Live Now</p>
@@ -2952,7 +2949,6 @@ function loadSiteContent(){
       ifr.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       ifr.setAttribute('allowfullscreen','');ifr.referrerPolicy='strict-origin-when-cross-origin';
       frame.innerHTML='';frame.appendChild(ifr);box.style.display='';
-      var wl=document.getElementById('siteVideoLink');if(wl)wl.href='https://www.youtube.com/watch?v='+vid;
     }
     var any=false;
     [['instagram','socInstagram'],['facebook','socFacebook'],['twitter','socTwitter'],['threads','socThreads']].forEach(function(p){
