@@ -2934,7 +2934,9 @@ function buildMobLangGrid(){
 // ── INIT ──
 // Homepage YouTube video and footer social links, managed in the admin panel
 function youTubeId(url){
-  var m=String(url||'').trim().match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  url=String(url||'').trim();
+  var src=url.match(/src="([^"]+)"/);if(src)url=src[1];   // pasted "Embed" code
+  var m=url.match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   return m?m[1]:'';
 }
 function safeHttpsUrl(u){u=String(u||'').trim();return /^https:\/\/[^\s"'<>]+$/.test(u)?u:'';}
@@ -2943,11 +2945,15 @@ function loadSiteContent(){
     var d=snap.exists?snap.data():{};
     var vid=youTubeId(d.youtube),box=document.getElementById('siteVideo'),frame=document.getElementById('siteVideoFrame');
     if(vid&&box&&frame){
+      // Same attributes as YouTube's own "Share → Embed" code; attributes are
+      // set before src so the first request already carries them
       var ifr=document.createElement('iframe');
+      ifr.title='YouTube video player';
+      ifr.setAttribute('frameborder','0');
+      ifr.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+      ifr.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+      ifr.setAttribute('allowfullscreen','');
       ifr.src='https://www.youtube.com/embed/'+vid+'?rel=0&playsinline=1';
-      ifr.title='ChessWin7 video';ifr.loading='lazy';
-      ifr.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-      ifr.setAttribute('allowfullscreen','');ifr.referrerPolicy='strict-origin-when-cross-origin';
       frame.innerHTML='';frame.appendChild(ifr);box.style.display='';
     }
     var any=false;

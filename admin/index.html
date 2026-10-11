@@ -874,7 +874,9 @@ function saveWallets(){
 const SITE_LINK_FIELDS={youtube:'siteYoutube',instagram:'siteInstagram',facebook:'siteFacebook',twitter:'siteTwitter',threads:'siteThreads'};
 // Same parser as the homepage: returns the 11-character video id or ''
 function youTubeId(url){
-  const m=String(url||'').trim().match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  url=String(url||'').trim();
+  const src=url.match(/src="([^"]+)"/);if(src)url=src[1];   // pasted "Embed" code
+  const m=url.match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   return m?m[1]:'';
 }
 function loadSiteLinks(){
@@ -887,8 +889,15 @@ function saveSiteLinks(){
   const data={};
   for(const [k,id] of Object.entries(SITE_LINK_FIELDS)){
     const v=document.getElementById(id).value.trim();
+    if(k==='youtube'){
+      // Accept a normal link or YouTube's "Embed" code; store a clean link
+      if(v&&!youTubeId(v)){toast('That is not a YouTube video link','er');return;}
+      data[k]=v?'https://www.youtube.com/watch?v='+youTubeId(v):'';
+      document.getElementById(id).value=data[k];
+      continue;
+    }
     if(v&&!/^https:\/\/[^\s"'<>]+$/.test(v)){toast('The '+k+' link must start with https://','er');return;}
-    if(k==='youtube'&&v&&!youTubeId(v)){toast('That is not a YouTube video link','er');return;}
+    if(v&&/youtube\.com|youtu\.be/i.test(v)){toast('The '+k+' box has a YouTube link — put your '+k+' page link there','er');return;}
     data[k]=v;
   }
   data.updatedAt=firebase.firestore.FieldValue.serverTimestamp();
