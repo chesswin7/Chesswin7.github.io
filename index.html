@@ -188,7 +188,7 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .mini-label{font-size:13px;font-weight:700;text-align:center;margin-bottom:5px}
 .mini-sub{font-size:10px;color:var(--muted);text-align:center;margin-top:2px}
 footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:13px}
-.footer-links{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;align-items:center;margin:12px 0}
+.footer-links{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;align-items:center;margin:14px auto;padding:12px 0;max-width:520px;border-top:1px solid var(--border2);border-bottom:1px solid var(--border2)}
 .footer-social{display:flex;gap:12px;justify-content:center;margin:4px 0 8px}
 .footer-social a{width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .15s}
 .footer-social a:hover{color:var(--accent);border-color:var(--accent)}
@@ -197,6 +197,8 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 .video-card{max-width:760px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
 .video-frame{position:relative;width:100%;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:#000}
 .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video-link{display:block;text-align:center;font-size:12px;font-weight:700;color:var(--muted);margin-top:8px;text-decoration:none}
+.video-link:hover{color:var(--accent)}
 .footer-links a{color:var(--muted);cursor:pointer;font-weight:600;transition:color .15s}
 .footer-links a:hover{color:var(--accent)}
 .faq-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
@@ -702,9 +704,6 @@ function _removeLoadBar(){
       </div>
     </div>
   </div>
-  <div class="video-section" id="siteVideo" style="display:none">
-    <div class="video-card"><div class="video-frame" id="siteVideoFrame"></div></div>
-  </div>
   <div class="stats-bar">
     <div class="stat-item reveal"><div class="stat-val">50K+</div><div class="stat-label" id="statLabel1">Active Players</div></div>
     <div class="stat-item reveal"><div class="stat-val">25M</div><div class="stat-label" id="statLabel2">Coins Awarded</div></div>
@@ -723,6 +722,10 @@ function _removeLoadBar(){
       <p id="miniBronze" class="mini-tier-label" style="color:#CD7F32;margin-top:24px">♟ Bronze Tier</p>
       <div class="mini-row" id="rowBronze"></div>
     </div>
+  </div>
+  <div class="video-section" id="siteVideo" style="display:none">
+    <div class="video-card"><div class="video-frame" id="siteVideoFrame"></div>
+      <a class="video-link" id="siteVideoLink" target="_blank" rel="noopener noreferrer">▶ Watch on YouTube</a></div>
   </div>
   <div class="section" id="arena">
     <p class="section-tag" id="arenaTag">Live Now</p>
@@ -2944,11 +2947,12 @@ function loadSiteContent(){
     var vid=youTubeId(d.youtube),box=document.getElementById('siteVideo'),frame=document.getElementById('siteVideoFrame');
     if(vid&&box&&frame){
       var ifr=document.createElement('iframe');
-      ifr.src='https://www.youtube-nocookie.com/embed/'+vid+'?rel=0&playsinline=1';
+      ifr.src='https://www.youtube.com/embed/'+vid+'?rel=0&playsinline=1';
       ifr.title='ChessWin7 video';ifr.loading='lazy';
       ifr.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       ifr.setAttribute('allowfullscreen','');ifr.referrerPolicy='strict-origin-when-cross-origin';
       frame.innerHTML='';frame.appendChild(ifr);box.style.display='';
+      var wl=document.getElementById('siteVideoLink');if(wl)wl.href='https://www.youtube.com/watch?v='+vid;
     }
     var any=false;
     [['instagram','socInstagram'],['facebook','socFacebook'],['twitter','socTwitter'],['threads','socThreads']].forEach(function(p){
