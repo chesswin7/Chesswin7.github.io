@@ -188,7 +188,7 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .mini-label{font-size:13px;font-weight:700;text-align:center;margin-bottom:5px}
 .mini-sub{font-size:10px;color:var(--muted);text-align:center;margin-top:2px}
 footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:13px}
-.footer-links{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;align-items:center;margin:12px 0}
+.footer-links{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;align-items:center;margin:14px auto;padding:12px 0;max-width:520px;border-top:1px solid var(--border2);border-bottom:1px solid var(--border2)}
 .footer-social{display:flex;gap:12px;justify-content:center;margin:4px 0 8px}
 .footer-social a{width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .15s}
 .footer-social a:hover{color:var(--accent);border-color:var(--accent)}
@@ -702,9 +702,6 @@ function _removeLoadBar(){
       </div>
     </div>
   </div>
-  <div class="video-section" id="siteVideo" style="display:none">
-    <div class="video-card"><div class="video-frame" id="siteVideoFrame"></div></div>
-  </div>
   <div class="stats-bar">
     <div class="stat-item reveal"><div class="stat-val">50K+</div><div class="stat-label" id="statLabel1">Active Players</div></div>
     <div class="stat-item reveal"><div class="stat-val">25M</div><div class="stat-label" id="statLabel2">Coins Awarded</div></div>
@@ -723,6 +720,9 @@ function _removeLoadBar(){
       <p id="miniBronze" class="mini-tier-label" style="color:#CD7F32;margin-top:24px">♟ Bronze Tier</p>
       <div class="mini-row" id="rowBronze"></div>
     </div>
+  </div>
+  <div class="video-section" id="siteVideo" style="display:none">
+    <div class="video-card"><div class="video-frame" id="siteVideoFrame"></div></div>
   </div>
   <div class="section" id="arena">
     <p class="section-tag" id="arenaTag">Live Now</p>
@@ -2944,7 +2944,7 @@ function loadSiteContent(){
     var vid=youTubeId(d.youtube),box=document.getElementById('siteVideo'),frame=document.getElementById('siteVideoFrame');
     if(vid&&box&&frame){
       var ifr=document.createElement('iframe');
-      ifr.src='https://www.youtube-nocookie.com/embed/'+vid+'?rel=0&playsinline=1';
+      ifr.src='https://www.youtube.com/embed/'+vid+'?rel=0&playsinline=1';
       ifr.title='ChessWin7 video';ifr.loading='lazy';
       ifr.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       ifr.setAttribute('allowfullscreen','');ifr.referrerPolicy='strict-origin-when-cross-origin';
