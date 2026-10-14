@@ -158,8 +158,8 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 .board-wrap{position:relative;display:flex;flex-direction:column;align-items:center;width:100%}
 .chessboard{display:grid;grid-template-columns:repeat(8,60px);grid-template-rows:repeat(8,60px);border:2px solid rgba(0,231,1,.3);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,231,1,.1)}
 .sq{width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .1s;position:relative;overflow:hidden}
-.sq.lm::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30%;height:30%;border-radius:50%;background:rgba(var(--hl-rgb),.75);z-index:1;pointer-events:none}
-.sq.lc::after{content:'';position:absolute;inset:3px;border-radius:6px;box-shadow:inset 0 0 0 min(3px,10%) rgba(var(--hl-rgb),.85);z-index:1;pointer-events:none}
+.sq.lm::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32%;height:32%;border-radius:50%;background:rgba(128,128,128,.5);z-index:1;pointer-events:none}
+.sq.lc::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,transparent 0,transparent 62%,rgba(128,128,128,.6) 64%,rgba(128,128,128,.6) 78%,transparent 80%);z-index:1;pointer-events:none}
 .sq.sel::before{content:'';position:absolute;inset:0;background:rgba(var(--hl-rgb),.28);z-index:1;pointer-events:none}
 .sq.lmv::before{content:none}
 /* hover only on devices with a mouse; on phones :hover sticks to the last
@@ -451,7 +451,6 @@ header{padding:0 8px}
 /* Board squares always fill their grid cell exactly */
 .chessboard .sq{width:100%!important;height:100%!important}
 #pBoard{position:relative}
-.capture-arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 </style></head>
 <body>
 <!-- SPLASH / LOADING SCREEN — shows on every full page load or refresh, both desktop and mobile -->
@@ -1643,38 +1642,8 @@ function resetHome(){hB=mkB();hT='w';hSel=null;hLm=[];hLmv=null;hCr={wK:1,wQ:1,b
 function undoHome(){if(!hHist.length)return;var h=hHist.pop();hB=h.b;hT=h.t;hSel=h.s;hLm=h.l;hLmv=h.lv;hCr=h.cr;hEp=h.ep;hGO=false;renderHome();homeCheckEnd();}
 function toggleAI(){hAI=!hAI;var btn=document.getElementById('aiBtn');if(btn)btn.textContent='AI: '+(hAI?'ON':'OFF');if(hAI&&hT==='b'&&!hGO){var htbT=document.getElementById('hThinkBar');if(htbT)htbT.style.display='block';var bm=bestAI(hB,4,hEp,hCr);if(bm){var res=applyM(bm,hB,hEp,hCr);hB=res.b;hEp=res.ep;hCr=res.cr;hLmv=bm;hT=Op(hT);renderHome();homeCheckEnd();}var htbT2=document.getElementById('hThinkBar');if(htbT2)htbT2.style.display='none';}}
 var pB=mkB(),pT='w',pSel=null,pLm=[],pLmv=null,pCr={wK:1,wQ:1,bK:1,bQ:1},pEp=null,pHist=[],pMH=[],pGO=false,pMode='ai',pColor='w';
-// Arrows from the selected piece to every enemy piece it can capture
-function drawCaptureArrows(){
-  var board=document.getElementById('pBoard');if(!board)return;
-  var old=board.querySelector('.capture-arrows');if(old)old.remove();
-  if(pSel===null||pSel===undefined||!pB[pSel])return;
-  var flip=pColor==='b';
-  var caps=legal(pSel,pB,pEp,pCr).filter(function(m){return (pB[m.t]&&pB[m.t].c!==pB[pSel].c)||m.ep;});
-  if(!caps.length)return;
-  var NS='http://www.w3.org/2000/svg';
-  var svg=document.createElementNS(NS,'svg');svg.setAttribute('class','capture-arrows');
-  svg.setAttribute('viewBox','0 0 8 8');svg.setAttribute('preserveAspectRatio','none');
-  var defs=document.createElementNS(NS,'defs'),mk=document.createElementNS(NS,'marker');
-  mk.setAttribute('id','capHead');mk.setAttribute('viewBox','0 0 10 10');mk.setAttribute('refX','5');mk.setAttribute('refY','5');
-  mk.setAttribute('markerWidth','3');mk.setAttribute('markerHeight','3');mk.setAttribute('orient','auto-start-reverse');
-  var head=document.createElementNS(NS,'path');head.setAttribute('d','M0,0 L10,5 L0,10 z');head.setAttribute('fill','rgba(249,56,72,.9)');
-  mk.appendChild(head);defs.appendChild(mk);svg.appendChild(defs);
-  function pos(i){var r=Rw(i),c=Cw(i);if(flip){r=7-r;c=7-c;}return{x:c+0.5,y:r+0.5};}
-  var a=pos(pSel);
-  caps.forEach(function(m){
-    var b=pos(m.t),dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy),ux=dx/len,uy=dy/len;
-    var ln=document.createElementNS(NS,'line');
-    ln.setAttribute('x1',a.x+ux*0.3);ln.setAttribute('y1',a.y+uy*0.3);
-    ln.setAttribute('x2',b.x-ux*0.35);ln.setAttribute('y2',b.y-uy*0.35);
-    ln.setAttribute('stroke','rgba(249,56,72,.9)');ln.setAttribute('stroke-width','0.14');ln.setAttribute('stroke-linecap','round');
-    ln.setAttribute('marker-end','url(#capHead)');
-    svg.appendChild(ln);
-  });
-  board.appendChild(svg);
-}
 function renderPlay(){
   renderBoard('pBoard',pB,pSel,pLm,pLmv,pColor==='b');
-  drawCaptureArrows();
   setCoords('p-ranks','p-files',pColor==='b',55);
   var _b=pB.slice(),_ep=pEp,_cr=Object.assign({},pCr);
   setTimeout(function(){
