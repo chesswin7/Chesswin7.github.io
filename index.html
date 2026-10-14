@@ -696,9 +696,6 @@ function _removeLoadBar(){
           </div>
         </div>
         <div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600;margin-top:8px" id="hSt">White to move</div>
-        <div id="hThinkBar" style="display:none;margin-top:6px;text-align:center">
-          <span class="ai-think-chip" style="display:inline-flex">🤖 AI Thinking...</span>
-        </div>
         <div class="board-controls">
           <button class="btn btn-o btn-sm" onclick="resetHome()">New</button>
           <button class="btn btn-o btn-sm" onclick="undoHome()">Undo</button>
@@ -839,9 +836,6 @@ function _removeLoadBar(){
   <div class="play-layout">
     <div class="play-board-wrap">
       <div class="player-bar" id="oppBar"><span id="oppName">Opponent</span><span id="oppTimer">—</span></div>
-      <div id="aiThinkBar" style="display:none;text-align:center">
-        <span class="ai-think-chip" style="display:inline-flex">🤖 AI Thinking...</span>
-      </div>
       <div style="display:flex;gap:8px;align-items:flex-start">
         <div style="display:flex;flex-direction:column;width:20px" id="p-ranks"></div>
         <div>
@@ -1716,8 +1710,8 @@ function commitPlayMove(mv,fromSq){
         setTimeout(function(){
           var bm=bestAI(pB,4,pEp,pCr);
           if(bm){pHist.push({b:pB.slice(),t:pT,s:null,l:[],lv:pLmv,cr:Object.assign({},pCr),ep:pEp});var r2=applyM(bm,pB,pEp,pCr);pB=r2.b;pEp=r2.ep;pCr=r2.cr;pLmv=bm;pT=Op(pT);pMH.push(bm);updMoves();renderPlay();playCheckEnd();
-            var atb2=document.getElementById('aiThinkBar');if(atb2)atb2.style.display='none';
-            var ob=document.getElementById('oppBar');if(ob)ob.style.borderColor='';}
+            var ob=document.getElementById('oppBar');if(ob)ob.style.borderColor='';
+            var on2=document.getElementById('oppName');if(on2)on2.textContent='AI';}
         },300);
       }
     }
