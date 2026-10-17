@@ -451,6 +451,11 @@ header{padding:0 8px}
 /* Board squares always fill their grid cell exactly */
 .chessboard .sq{width:100%!important;height:100%!important}
 #pBoard{position:relative}
+/* Phones/tablets: the play board uses the full width, as wide as the player
+   bars above and below it (page padding 2x12px + board border 2x2px) */
+@media(max-width:900px){
+#pBoard{grid-template-columns:repeat(8,min(calc((100vw - 28px) / 8),60px))!important;grid-template-rows:repeat(8,min(calc((100vw - 28px) / 8),60px))!important}
+}
 </style></head>
 <body>
 <!-- SPLASH / LOADING SCREEN — shows on every full page load or refresh, both desktop and mobile -->
