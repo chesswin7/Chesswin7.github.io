@@ -106,7 +106,7 @@ header{position:sticky;top:0;z-index:100;height:60px;background:var(--surface);b
 #navExposure{direction:ltr!important}
 #navBalance{direction:ltr!important}
 .banner-slider{position:relative;width:100%;max-width:1500px;margin:16px auto 4px;padding:0 24px}
-.banner-slider-viewport{position:relative;overflow:hidden;max-height:280px}
+.banner-slider-viewport{position:relative;overflow:hidden}
 .banner-slider-track{display:flex;gap:16px}
 .banner-slide{flex:1 1 0;min-width:0;aspect-ratio:540/460;background:var(--surface2);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
 .banner-slide.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s}
@@ -1845,6 +1845,22 @@ function buildLB(players){
     row.appendChild(rankDiv);row.appendChild(nameDiv);row.appendChild(tierDiv);row.appendChild(ratingDiv);row.appendChild(winsDiv);row.appendChild(coinsDiv);
     return row;}
   vp.innerHTML='';
+  var MAX_VISIBLE=10;
+  if(players.length<=MAX_VISIBLE){
+    // Everyone fits: show a still list (scrolling a short list looked stuck/cut off)
+    players.forEach(function(p,i){var r=makeRow(p,i);r.style.top=(i*ROW_H)+'px';vp.appendChild(r);});
+    var rowsShown=players.length;
+    if(players.length<5){
+      var inv=document.createElement('div');inv.className='lb-invite';
+      inv.style.cssText='position:absolute;left:0;right:0;top:'+(players.length*ROW_H)+'px;height:'+ROW_H+'px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;border-bottom:1px solid var(--border)';
+      inv.textContent='♟ Your name here — win a game to join the leaderboard ▶';
+      inv.onclick=function(){goPage('play');};
+      vp.appendChild(inv);rowsShown++;
+    }
+    vp.style.height=(rowsShown*ROW_H)+'px';
+    vp.onmouseenter=null;vp.onmouseleave=null;
+    return;
+  }
   var doubled=players.concat(players);
   doubled.forEach(function(p,i){vp.appendChild(makeRow(p,i%players.length));});
   vp.style.height=(players.length*ROW_H)+'px';
@@ -1888,9 +1904,20 @@ function buildTicker(players){
     var rating=document.createElement('span');rating.style.color='var(--muted)';rating.textContent='⭐ '+(p.r||p.rating||0);
     var coins=document.createElement('span');coins.style.cssText='color:var(--accent);margin-left:8px';coins.textContent='🪙 '+((p.c||p.coins||0)).toLocaleString();
     item.appendChild(medal);item.appendChild(name);item.appendChild(rating);item.appendChild(coins);return item;}
-  players.forEach(function(p,i){frag.appendChild(makeItem(p,i));});
-  players.forEach(function(p,i){frag.appendChild(makeItem(p,i));});
-  track.appendChild(frag);
+  // Real players (top 10) mixed with ChessWin7 slogans — no invented players
+  var SLOGANS=['♛ Play Smart. Play Fair. Win with Skill.','⚡ Bullet · Blitz · Rapid · Classical','🔒 Every move is server-checked','🏆 Win games to climb the leaderboard'];
+  function makeSlogan(t){var item=document.createElement('div');item.className='tick-item';var sp=document.createElement('span');sp.style.cssText='font-weight:800;color:var(--accent)';sp.textContent=t;item.appendChild(sp);return item;}
+  function addSet(){
+    var top=players.slice(0,10),si=0;
+    top.forEach(function(p,i){frag.appendChild(makeItem(p,i));if(i%3===2&&si<SLOGANS.length)frag.appendChild(makeSlogan(SLOGANS[si++]));});
+    while(si<SLOGANS.length)frag.appendChild(makeSlogan(SLOGANS[si++]));
+  }
+  // one "lap" must be at least as wide as the screen, otherwise the loop shows gaps
+  var box=track.parentElement,need=Math.max(box?box.clientWidth:0,window.innerWidth||0);
+  addSet();track.appendChild(frag);
+  for(var g=0;g<8&&track.scrollWidth<need;g++){addSet();track.appendChild(frag);}
+  var lap=track.innerHTML;track.innerHTML=lap+lap;   // two identical laps -> seamless -50% loop
+  track.style.animationDuration=Math.max(20,Math.round(track.scrollWidth/2/60))+'s';
 }
 var FAQS_ALL={en:[['What is ChessWin7?','A skill-based online chess platform where players compete and earn real USDT rewards.'],['Is ChessWin7 based on luck?','No. Results depend entirely on player skill, strategy, and chess knowledge.'],['What is the coin value?','1 USDT = 1 COIN on our platform.'],['Does ChessWin7 provide bonuses?','YES! 🏆 Welcome Bonus • Refill Bonus • Loss Bonus Available for All Tiers 🏆'],['What is the minimum deposit?','10 COINS (10 USDT).'],['How are winnings calculated?','A 5% platform fee is deducted. Example: 10 USDT pool → winner gets 9.50 USDT.'],['How do I withdraw?','Go to the Withdrawal page, enter amount and your USDT wallet address. Admin processes within 48 hours.'],['What time controls are available?','UltraBullet (30s), Bullet (1-2 min), Blitz (3-5 min), Rapid (10-60 min), Classical (60+ min).'],['How does rating work?','Win = +10 rating. Loss = -8 rating. Tiers from Bronze (0) to Legend (2600+).'],['Can my account be suspended?','Yes, for cheating, bot usage, or fraudulent activity.'],['Can I sign in with Google?','Yes! Click "Continue with Google" on the login screen.']],es:[['¿Qué es ChessWin7?','Una plataforma de ajedrez basada en habilidad donde los jugadores compiten y ganan recompensas reales en USDT.'],['¿Está basado en la suerte?','No. Los resultados dependen totalmente de la habilidad del jugador.'],['¿Cuál es el valor de las monedas?','1 USDT = 1 MONEDA en nuestra plataforma.'],['¿Ofrece bonos ChessWin7?','¡SÍ! 🏆 Bono de Bienvenida • Bono de Recarga • Bono por Pérdida 🏆'],['¿Cuál es el depósito mínimo?','10 MONEDAS (10 USDT).'],['¿Cómo se calculan las ganancias?','Se deduce una comisión del 5%.'],['¿Cómo retiro?','Ve a la página de Retiro. Admin procesa en 48h.'],['¿Qué controles de tiempo están disponibles?','UltraBala, Bala, Blitz, Rápido, Clásico.'],['¿Cómo funciona el rating?','Ganar = +10. Perder = -8.'],['¿Pueden suspender mi cuenta?','Sí, por trampa o fraude.'],['¿Puedo iniciar sesión con Google?','¡Sí!']],ru:[['Что такое ChessWin7?','Платформа для шахмат на основе навыков с реальными USDT наградами.'],['Основан ли на удаче?','Нет.'],['Какова стоимость монет?','1 USDT = 1 МОНЕТА.'],['Предоставляет ли бонусы?','ДА! 🏆 Приветственный бонус 🏆'],['Мин. депозит?','10 МОНЕТ.'],['Как рассчитываются выигрыши?','Комиссия 5%.'],['Как вывести?','Страница Вывода, 48ч.'],['Контроли времени?','Пуля, Блиц, Рапид, Классика.'],['Рейтинг?','Победа +10, Поражение -8.'],['Блокировка?','За читерство.'],['Google?','Да!']],ur:[['ChessWin7 کیا ہے؟','مہارت پر مبنی شطرنج پلیٹ فارم جہاں USDT انعام ملتے ہیں۔'],['قسمت پر مبنی؟','نہیں۔'],['کوائن کی قیمت؟','1 USDT = 1 کوائن۔'],['بونس؟','ہاں! 🏆'],['کم از کم ڈپازٹ؟','10 USDT۔'],['جیت کا حساب؟','5% فیس۔'],['ود ڈرال؟','48 گھنٹے۔'],['ٹائم کنٹرول؟','بلٹ، بلٹز، ریپڈ۔'],['ریٹنگ؟','جیت +10، ہار -8۔'],['اکاؤنٹ بند؟','دھوکے پر ہاں۔'],['گوگل لاگ ان؟','ہاں!']],zh:[['什么是 ChessWin7？','技能型国际象棋平台，赢取USDT。'],['基于运气吗？','不。'],['金币价值？','1 USDT = 1 金币。'],['提供奖励吗？','是！🏆'],['最低充值？','10 USDT。'],['收益计算？','扣5%手续费。'],['提款？','48小时处理。'],['时间控制？','超快、快棋、闪电战、快速、经典。'],['评级？','胜+10，败-8。'],['账户封禁？','作弊则是。'],['Google登录？','是！']],ja:[['ChessWin7とは？','スキルベースのチェスプラットフォームです。'],['運基づき？','いいえ。'],['コイン価値？','1 USDT = 1 コイン。'],['ボーナス？','はい！🏆'],['最低入金？','10 USDT。'],['収益計算？','5%手数料。'],['出金？','48時間。'],['時間制御？','バレット、ブリッツ、ラピッド。'],['レーティング？','勝+10、敗-8。'],['凍結？','不正行為で。'],['Google？','はい！']],ko:[['ChessWin7이란？','실력 기반 체스 플랫폼입니다。'],['운기반？','아니요。'],['코인 가치？','1 USDT = 1 코인。'],['보너스？','네！🏆'],['최소 입금？','10 USDT。'],['수익 계산？','5% 수수료。'],['출금？','48시간。'],['시간 제어？','블릿, 블리츠, 래피드。'],['레이팅？','승+10, 패-8。'],['계정 정지？','부정행위 시。'],['Google？','네！']],id:[['Apa itu ChessWin7?','Platform catur berbasis keahlian untuk mendapat USDT.'],['Berbasis keberuntungan?','Tidak.'],['Nilai koin?','1 USDT = 1 KOIN.'],['Ada bonus?','YA! 🏆'],['Setoran minimum?','10 USDT.'],['Hitung kemenangan?','Biaya 5%.'],['Cara menarik?','48 jam.'],['Kontrol waktu?','Bullet, Blitz, Rapid.'],['Rating?','Menang +10, Kalah -8.'],['Akun ditangguhkan?','Ya, untuk kecurangan.'],['Google?','Ya!']],ha:[['Mene ne ChessWin7?','Dandamalin chess na kan layi.'],['Ya dogara akan wasa?','Aai.'],['Darajar kudin?','1 USDT = 1 KUDIN.'],['Kyaututtuka?','E! 🏆'],['Mafi ƙarancin ajiya?','10 USDT.'],['Lissafin riba?','Kashi 5%.'],['Cire kudi?','Awanni 48.'],['Lokutan wasa?','Bullet, Blitz, Rapid.'],['Kididdiga?','Nasara +10, Asara -8.'],['Dakatar asusun?','E, saboda magudi.'],['Google?','E!']],de:[['Was ist ChessWin7?','Fertigkeitsbasierte Schachplattform für USDT-Belohnungen.'],['Glücksbasis?','Nein.'],['Münzwert?','1 USDT = 1 Münze.'],['Boni?','JA! 🏆'],['Mindesteinzahlung?','10 USDT.'],['Gewinne?','5% Gebühr.'],['Auszahlung?','48 Stunden.'],['Zeitkontrollen?','Bullet, Blitz, Rapid.'],['Rating?','Sieg +10, Niederlage -8.'],['Konto gesperrt?','Bei Betrug.'],['Google?','Ja!']]};
 function getFAQS(){return FAQS_ALL[activeLang]||FAQS_ALL['en'];}
