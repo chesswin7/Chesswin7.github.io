@@ -204,6 +204,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
       <div class="sb-lbl">Finance</div>
       <div class="sb-item" onclick="goSec('deposits',this)"><span class="si">💰</span>Deposit Requests<span class="sb-num" id="sb-dp">0</span></div>
       <div class="sb-item" onclick="goSec('withdrawals',this)"><span class="si">💸</span>Withdrawal Requests<span class="sb-num orange" id="sb-wd">0</span></div>
+      <div class="sb-item" onclick="goSec('games',this);loadGames()"><span class="si">♟</span>Games &amp; Fees</div>
       <div class="sb-lbl">Content</div>
       <div class="sb-item" onclick="goSec('banners',this)"><span class="si">🖼️</span>Homepage Banners</div>
       <div class="sb-lbl">System</div>
@@ -285,6 +286,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
         </table></div><div class="tbl-footer"><span id="wdFooter"></span></div></div>
       </div>
 
+      <!-- GAMES & FEES -->
+      <div class="sec" id="sec-games">
+        <div class="pg-hdr">
+          <div><div class="pg-title">Games &amp; Fees</div><div class="pg-sub">Paid games handled by the game server: entries held, payouts and fees</div></div>
+          <button class="btn btn-o btn-sm" onclick="loadGames()">↻ Refresh</button>
+        </div>
+        <div class="cards">
+          <div class="card g"><span class="card-icon">💹</span><div class="card-val" id="g-fees">—</div><div class="card-lbl">Fees Earned (COINS)</div></div>
+          <div class="card o"><span class="card-icon">⚡</span><div class="card-val" id="g-locked">—</div><div class="card-lbl">Locked In Games Now</div></div>
+          <div class="card b"><span class="card-icon">♟</span><div class="card-val" id="g-live">—</div><div class="card-lbl">Games In Play</div></div>
+          <div class="card p"><span class="card-icon">✅</span><div class="card-val" id="g-done">—</div><div class="card-lbl">Games Settled</div></div>
+        </div>
+        <div class="tbl-wrap"><div class="tbl-scroll"><table class="tbl">
+          <thead><tr><th>Started</th><th>White</th><th>Black</th><th>Mode</th><th>Time</th><th>Entry</th><th>Result</th><th>Payout</th><th>Fee</th><th>Status</th></tr></thead>
+          <tbody id="gamesTbl"><tr><td colspan="10" class="loading">Open this page to load games</td></tr></tbody>
+        </table></div><div class="tbl-footer"><span>Last 50 games. Draws and aborted games return both entries and earn no fee.</span></div></div>
+      </div>
+
       <!-- BANNERS -->
       <div class="sec" id="sec-banners">
         <div class="pg-hdr">
@@ -303,7 +322,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:680px">
           <div class="tbl-wrap" style="padding:20px">
             <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">Platform Fee</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Deducted from every prize pool</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Taken from the pool of every won game (2 × entry). Draws and aborted games: no fee</div>
             <div style="display:flex;align-items:center;gap:10px">
               <input id="feeInput" value="5" type="number" min="0" max="50" class="set-input" style="width:70px">
               <span style="color:var(--muted);font-weight:600">%</span>
@@ -317,6 +336,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
               <input id="minDepInput" value="10" type="number" min="1" class="set-input" style="width:80px">
               <span style="color:var(--muted);font-weight:600">USDT</span>
               <button class="btn btn-sm" onclick="savePlatformSetting('minDeposit','minDepInput',1,100000)">Save</button>
+            </div>
+          </div>
+          <div class="tbl-wrap" style="padding:20px;grid-column:1/-1">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px">Game Entry Amounts</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px">The entries players can choose for Friend and Matchmaking games, in COINS, separated by commas. The smallest one is the minimum entry. Changes reach the site within a minute.</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input id="entryOptionsInput" class="set-input" style="flex:1" placeholder="1, 2, 5, 10, 25, 50, 100">
+              <button class="btn btn-sm" onclick="saveEntryOptions()">Save</button>
             </div>
           </div>
           <div class="tbl-wrap" style="padding:20px;grid-column:1/-1">
@@ -912,7 +939,45 @@ function loadPlatformSettings(){
     const d=snap.data();
     if(d.feePercent!=null)document.getElementById('feeInput').value=d.feePercent;
     if(d.minDeposit!=null)document.getElementById('minDepInput').value=d.minDeposit;
+    document.getElementById('entryOptionsInput').value=(Array.isArray(d.entryOptions)?d.entryOptions:[1,2,5,10,25,50,100]).join(', ');
   }).catch(()=>{});
+}
+function saveEntryOptions(){
+  const parts=document.getElementById('entryOptionsInput').value.split(',').map(x=>x.trim()).filter(Boolean);
+  const vals=parts.map(Number);
+  if(!vals.length||vals.some(v=>!(v>=0.1&&v<=10000))){toast('Enter amounts between 0.1 and 10000, separated by commas','er');return;}
+  if(vals.length>12){toast('At most 12 amounts','er');return;}
+  const opts=[...new Set(vals.map(v=>Math.round(v*100)/100))].sort((a,b)=>a-b);
+  db.collection('settings').doc('platform').set({entryOptions:opts,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
+    .then(()=>{document.getElementById('entryOptionsInput').value=opts.join(', ');toast('✓ Saved — minimum entry is now '+opts[0]+' COINS','ok');})
+    .catch(e=>toast('Error: '+e.message,'er'));
+}
+
+// ── GAMES & FEES (from the game server, admin-only endpoint) ──
+const GAME_SERVER_URL='https://chesswin7-server.onrender.com';
+function loadGames(){
+  const tb=document.getElementById('gamesTbl');
+  tb.innerHTML='<tr><td colspan="10" class="loading">Loading from the game server (can take up to a minute if it was asleep)...</td></tr>';
+  auth.currentUser.getIdToken().then(t=>fetch(GAME_SERVER_URL+'/admin/games',{headers:{Authorization:'Bearer '+t}}))
+  .then(r=>r.json().then(d=>{if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;}))
+  .then(d=>{
+    const c=v=>{const x=Math.round(num(v)*100)/100;return x.toLocaleString(undefined,Number.isInteger(x)?{}:{minimumFractionDigits:2,maximumFractionDigits:2});};
+    document.getElementById('g-fees').textContent=c(d.feesTotal);
+    document.getElementById('g-locked').textContent=c(d.lockedTotal);
+    document.getElementById('g-live').textContent=num(d.gamesInPlay);
+    document.getElementById('g-done').textContent=num(d.settledGames);
+    const RES={w:'White won',b:'Black won',draw:'Draw',aborted:'Aborted'};
+    tb.innerHTML=(d.matches||[]).map(m=>'<tr>'+
+      '<td>'+esc(m.createdAt?new Date(m.createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—')+'</td>'+
+      '<td>'+esc(m.white)+'</td><td>'+esc(m.black)+'</td>'+
+      '<td>'+esc(m.mode==='match'?'Matchmaking':'Friend')+'</td>'+
+      '<td>'+esc(m.tc<60?m.tc+'s':(m.tc/60)+'m')+'</td>'+
+      '<td>'+c(m.stake)+'</td>'+
+      '<td>'+esc(m.result?(RES[m.result]||m.result)+(m.reason?' ('+m.reason+')':''):'—')+'</td>'+
+      '<td>'+(m.payout?c(m.payout):'—')+'</td><td>'+(m.fee?c(m.fee):'—')+'</td>'+
+      '<td><span class="badge '+(m.status==='settled'?'b-approved':'b-pending')+'">'+esc(m.status==='settled'?'Settled':'In play')+'</span></td></tr>').join('')
+      ||'<tr><td colspan="10" class="loading">No paid games yet</td></tr>';
+  }).catch(e=>{tb.innerHTML='<tr><td colspan="10" class="loading">Could not load games: '+esc(e.message)+'</td></tr>';});
 }
 function savePlatformSetting(field,inputId,min,max){
   const v=parseFloat(document.getElementById(inputId).value);
