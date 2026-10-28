@@ -236,6 +236,14 @@ footer{padding:32px 48px;border-top:1px solid var(--border);text-align:center;co
 .mt{font-size:12px;font-weight:700;padding:7px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
 .mt.active,.mt:hover{background:var(--accent);color:#000;border-color:var(--accent)}
 .mc{display:none}.mc.active{display:block}
+.entry-note{font-size:12px;color:var(--muted);line-height:1.5;margin:-4px 0 12px}.entry-note b{color:var(--accent)}.entry-note a{color:var(--accent);cursor:pointer;text-decoration:underline}
+.free-note{font-size:12px;color:var(--muted);margin:-4px 0 12px}
+#pStake{text-align:center;font-size:12px;font-weight:700;color:var(--accent);min-height:16px}
+.entry-modal{position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+.entry-modal .box{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.entry-modal h3{font-size:18px;margin-bottom:14px}.entry-modal .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.entry-modal .row span:first-child{color:var(--muted)}.entry-modal .row b{color:var(--text)}.entry-modal .row b.win{color:var(--accent)}
+.entry-modal p{font-size:12px;color:var(--muted);margin:12px 0 16px}.entry-modal .btns{display:flex;gap:10px}.entry-modal .btns .btn{flex:1}
 .inp label{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 .inp select,.inp input{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;margin-bottom:10px;outline:none}
 .move-list{max-height:160px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:12px}
@@ -891,8 +899,9 @@ function _removeLoadBar(){
       </div>
       <div class="player-bar active" id="meBar"><span id="meName">You (White)</span><span id="meTimer">—</span></div>
       <div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600" id="pSt">Choose a mode →</div>
+      <div id="pStake"></div>
       <div class="board-controls">
-        <button class="btn btn-o btn-sm" id="playBtnNew" onclick="resetPlay()">New</button>
+        <button class="btn btn-o btn-sm" id="playBtnNew" onclick="newGameBtn()">New</button>
         <button class="btn btn-o btn-sm" id="playBtnDraw" onclick="offerDraw()">½ Draw</button>
         <button class="btn btn-red btn-sm" id="playBtnResign" onclick="resignGame()">Resign</button>
       </div>
@@ -911,19 +920,23 @@ function _removeLoadBar(){
             <select id="aiCol"><option value="w">White</option><option value="b">Black</option><option value="r">Random</option></select>
           </div>
           <input type="hidden" id="aiDiff" value="4">
+          <div class="free-note">Free practice — no entry, no prize.</div>
           <button class="btn" id="startAiBtn" style="width:100%" onclick="startAI()">Start vs AI</button>
         </div>
         <div class="mc" id="mc-friend">
           <div class="inp">
             <label id="timeCtrlLabel">Time Control</label>
-            <select id="ftc"><option value="30">30s Ultra</option><option value="60">1min Bullet</option><option value="180">3min Blitz</option><option value="600" selected>10min Rapid</option><option value="0">No Limit</option></select>
+            <select id="ftc"><option value="30">30s Ultra</option><option value="60">1min Bullet</option><option value="180">3min Blitz</option><option value="300">5min Blitz</option><option value="600" selected>10min Rapid</option><option value="900">15min Rapid</option><option value="1800">30min Classical</option></select>
           </div>
+          <div class="inp"><label class="entryLbl">Entry Fee</label><select id="fentry" onchange="updEntryNote('f')"></select></div>
+          <div class="entry-note" id="fentryNote"></div>
           <button class="btn" id="createRoomBtn" style="width:100%;margin-bottom:8px" onclick="createRoom()">Create Room</button>
           <div class="inp"><label id="roomCodeLabel">Room Code</label><input id="joinCode" placeholder="Enter code"></div>
           <button class="btn btn-o" id="joinRoomBtn" style="width:100%" onclick="joinRoom()">Join Room</button>
           <div id="roomDisplay" style="display:none;text-align:center;margin-top:12px">
             <p style="font-size:10px;color:var(--muted);margin-bottom:4px">YOUR CODE</p>
             <p style="font-size:32px;font-weight:900;color:var(--accent)" id="roomCode"></p>
+            <p style="font-size:12px;color:var(--muted)" id="roomEntry"></p>
           </div>
         </div>
         <div class="mc" id="mc-match">
@@ -941,6 +954,8 @@ function _removeLoadBar(){
                 <option value="3600">60min Classical</option>
               </select>
           </div>
+          <div class="inp"><label class="entryLbl">Entry Fee</label><select id="mentry" onchange="updEntryNote('m')"></select></div>
+          <div class="entry-note" id="mentryNote"></div>
           <button class="btn" style="width:100%;margin-bottom:8px" id="matchBtn" onclick="startMatch()">Find Opponent</button>
           <div id="matchSt" style="display:none;text-align:center;font-size:12px;color:var(--muted)"><span class="dot"></span>Searching...</div>
         </div>
@@ -1289,9 +1304,16 @@ function connectSocket(cb) {
       if (rd) rd.style.display = 'block';
       var rc = document.getElementById('roomCode');
       if (rc) rc.textContent = d.code;
+      var re = document.getElementById('roomEntry');
+      if (re) re.textContent = 'Entry ' + fmtCoins(d.stake) + ' COINS each · Winner gets ' + fmtCoins(d.payout) + ' COINS';
       toast('Room created! Share code: ' + d.code, 'ok');
     });
-    socket.on('room_error', function(d) { toast(d.message, 'err'); resetMatchButton(); });
+    socket.on('room_info', function(d) { showEntryConfirm(d); });
+    socket.on('room_error', function(d) {
+      if (d.code === 'confirm' && d.room) { showEntryConfirm(d.room); return; }
+      moneyError(d);
+      resetMatchButton();
+    });
     socket.on('room_cancelled', function() {
       _roomCode = null;
       var rd = document.getElementById('roomDisplay');
@@ -1303,7 +1325,7 @@ function connectSocket(cb) {
       if (stEl) stEl.style.display = 'block';
     });
     socket.on('match_cancelled', function() { resetMatchButton(); toast('Search cancelled', 'info'); });
-    socket.on('match_error', function(d) { toast(d.message, 'err'); resetMatchButton(); });
+    socket.on('match_error', function(d) { moneyError(d); resetMatchButton(); });
     // ── Game lifecycle ──
     socket.on('game_start', function(d) { beginServerGame(d, false); });
     socket.on('game_resume', function(d) { beginServerGame(d, true); });
@@ -1329,7 +1351,17 @@ function connectSocket(cb) {
       syncClocks(d.whiteMs, d.blackMs);
       var st = document.getElementById('pSt');
       if (st) st.textContent = d.result;
-      toast(d.result, d.winner === _myColor ? 'ok' : (d.winner === 'draw' ? 'info' : 'err'));
+      // Money result of this game (the server pays it; the balance in the
+      // header updates by itself)
+      var money = '';
+      if (d.stake) {
+        if (d.winner === 'draw' || d.winner === 'aborted') money = '↩ Your entry of ' + fmtCoins(d.stake) + ' COINS was returned';
+        else if (d.winner === _myColor) money = '🏆 You won +' + fmtCoins(d.payout) + ' COINS';
+        else money = 'You lost your entry of ' + fmtCoins(d.stake) + ' COINS';
+      }
+      var ps = document.getElementById('pStake');
+      if (ps) ps.textContent = money;
+      toast(d.result + (money ? ' · ' + money : ''), d.winner === _myColor ? 'ok' : (d.winner === 'draw' || d.winner === 'aborted' ? 'info' : 'err'));
       _roomCode = null;
       // Refresh user stats (server updated rating/wins/losses)
       if (window.currentUser) {
@@ -1386,6 +1418,8 @@ function beginServerGame(d, isResume) {
   if (on) on.textContent = (d.opponentName || 'Opponent');
   var rd = document.getElementById('roomDisplay');
   if (rd) rd.style.display = 'none';
+  var ps = document.getElementById('pStake');
+  if (ps) ps.textContent = d.stake ? '💰 Entry ' + fmtCoins(d.stake) + ' COINS · Winner gets ' + fmtCoins(d.payout) + ' COINS' : '';
   resetMatchButton();
   goPage('play');
   if (d.tc > 0) {
@@ -1486,18 +1520,109 @@ function applyOpponentMove(from, to, promotion, fen) {
 // ── Actions wired to server ──
 function createRoom() {
   if (!window.currentUser) { openAuth('login'); return; }
+  var e = selectedEntry('f');
+  if (!e || !canAfford(e.stake)) return;
   connectSocket(function() {
     var tc = parseInt(document.getElementById('ftc').value) || 600;
-    socket.emit('create_room', { tc: tc });
+    socket.emit('create_room', { tc: tc, stake: e.stake });
   });
 }
+// Asks the server for the room's entry first; the player confirms it in
+// showEntryConfirm before anything is paid.
 function joinRoom() {
   if (!window.currentUser) { openAuth('login'); return; }
   var code = (document.getElementById('joinCode').value || '').trim().toUpperCase();
   if (!code || code.length < 4) { toast('Enter a valid room code', 'err'); return; }
   connectSocket(function() {
-    socket.emit('join_room', { code: code });
+    socket.emit('room_info', { code: code });
   });
+}
+// ── Game entries ──
+var _gameSettings = { feePercent: 5, entries: [1, 2, 5, 10, 25, 50, 100].map(function(s) { return { stake: s, payout: Math.round(s * 190) / 100 }; }) };
+function fmtCoins(n) {
+  var v = Math.round(Number(n || 0) * 100) / 100;
+  return v.toLocaleString(undefined, Number.isInteger(v) ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function tcLabel(tc) { return tc < 60 ? tc + ' sec' : (tc / 60) + ' min'; }
+function loadGameSettings() {
+  fetch(GAME_SERVER_URL + '/games/settings').then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.entries && d.entries.length) { _gameSettings = d; fillEntrySelects(); }
+  }).catch(function() {});
+}
+function fillEntrySelects() {
+  ['fentry', 'mentry'].forEach(function(id) {
+    var sel = document.getElementById(id); if (!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = '';
+    _gameSettings.entries.forEach(function(e) {
+      var o = document.createElement('option');
+      o.value = e.stake;
+      o.textContent = fmtCoins(e.stake) + ' COINS — win ' + fmtCoins(e.payout);
+      sel.appendChild(o);
+    });
+    if (prev && _gameSettings.entries.some(function(e) { return String(e.stake) === prev; })) sel.value = prev;
+  });
+  updEntryNote('f'); updEntryNote('m');
+}
+function selectedEntry(prefix) {
+  var sel = document.getElementById(prefix + 'entry');
+  var v = sel ? Number(sel.value) : NaN;
+  return _gameSettings.entries.find(function(e) { return e.stake === v; }) || null;
+}
+function availableCoins() { return window.currentUserData ? Number(window.currentUserData.coins || 0) : null; }
+function updEntryNote(prefix) {
+  var n = document.getElementById(prefix + 'entryNote'), e = selectedEntry(prefix);
+  if (!n || !e) return;
+  var bal = availableCoins();
+  n.innerHTML = 'Both players pay ' + fmtCoins(e.stake) + ' COINS. Winner gets <b>' + fmtCoins(e.payout) + ' COINS</b> (' +
+    fmtCoins(_gameSettings.feePercent) + '% fee). Draw or aborted game: entry returned.' +
+    (bal == null ? '' : '<br>Available: ' + fmtCoins(bal) + ' COINS' + (bal < e.stake ? ' — <a onclick="goPage(\'deposit\')">Deposit</a>' : ''));
+}
+function canAfford(stake) {
+  var bal = availableCoins();
+  if (bal != null && bal < stake) {
+    toast('Not enough balance: this game needs ' + fmtCoins(stake) + ' COINS, you have ' + fmtCoins(bal) + '. Please deposit first.', 'err');
+    return false;
+  }
+  return true;
+}
+function moneyError(d) {
+  toast(d.message + (d.code === 'balance' ? ' — please deposit first.' : ''), 'err');
+}
+function showEntryConfirm(info) {
+  var old = document.getElementById('entryModal'); if (old) old.remove();
+  var m = document.createElement('div');
+  m.className = 'entry-modal'; m.id = 'entryModal';
+  var box = document.createElement('div'); box.className = 'box';
+  var h = document.createElement('h3'); h.textContent = 'Join ' + safeText(info.host || 'your friend') + "'s game?";
+  box.appendChild(h);
+  [['Entry fee', fmtCoins(info.stake) + ' COINS', ''], ['Time control', tcLabel(info.tc), ''], ['Winner gets', fmtCoins(info.payout) + ' COINS', 'win']].forEach(function(r) {
+    var row = document.createElement('div'); row.className = 'row';
+    var a = document.createElement('span'); a.textContent = r[0];
+    var b = document.createElement('b'); b.textContent = r[1]; if (r[2]) b.className = r[2];
+    row.appendChild(a); row.appendChild(b); box.appendChild(row);
+  });
+  var p = document.createElement('p');
+  p.textContent = 'The entry is taken from your balance when the game starts. Draw or aborted game: your entry is returned.';
+  box.appendChild(p);
+  var btns = document.createElement('div'); btns.className = 'btns';
+  var no = document.createElement('button'); no.className = 'btn btn-o'; no.textContent = 'Cancel';
+  var yes = document.createElement('button'); yes.className = 'btn'; yes.textContent = 'Pay ' + fmtCoins(info.stake) + ' & Join';
+  no.onclick = function() { m.remove(); };
+  yes.onclick = function() {
+    m.remove();
+    if (!canAfford(info.stake)) return;
+    connectSocket(function() { socket.emit('join_room', { code: info.code, stake: info.stake }); });
+  };
+  btns.appendChild(no); btns.appendChild(yes); box.appendChild(btns);
+  m.appendChild(box);
+  m.onclick = function(ev) { if (ev.target === m) m.remove(); };
+  document.body.appendChild(m);
+}
+function newGameBtn() {
+  if (_onlineGame) { toast('Finish or resign the current game first', 'info'); return; }
+  resetPlay();
+  var ps = document.getElementById('pStake'); if (ps) ps.textContent = '';
 }
 function startMatch() {
   if (!window.currentUser) { openAuth('login'); return; }
@@ -1507,12 +1632,14 @@ function startMatch() {
     resetMatchButton();
     return;
   }
+  var e = selectedEntry('m');
+  if (!e || !canAfford(e.stake)) return;
   connectSocket(function() {
     var tc = parseInt(document.getElementById('mtc').value) || 600;
     if (btn) { btn.dataset.searching = '1'; btn.textContent = 'Cancel'; }
     var stEl = document.getElementById('matchSt');
     if (stEl) stEl.style.display = 'block';
-    socket.emit('find_match', { tc: tc });
+    socket.emit('find_match', { tc: tc, stake: e.stake });
   });
 }
 function resetMatchButton() {
@@ -1777,7 +1904,7 @@ function updMoves(){var box=document.getElementById('pMoves');if(!box)return;box
   box.scrollTop=box.scrollHeight;}
 function resetPlay(){pB=mkB();pT='w';pSel=null;pLm=[];pLmv=null;pCr={wK:1,wQ:1,bK:1,bQ:1};pEp=null;pHist=[];pMH=[];pGO=false;updMoves();renderPlay();var st=document.getElementById('pSt');if(st)st.textContent='Choose a mode →';}
 function undoPlay(){if(!pHist.length||pMode!=='ai')return;var h=pHist.pop();pB=h.b;pT=h.t;pSel=h.s;pLm=h.l;pLmv=h.lv;pCr=h.cr;pEp=h.ep;pGO=false;if(pMH.length)pMH.pop();updMoves();renderPlay();playCheckEnd();}
-function startAI(){var col=document.getElementById('aiCol').value;pColor=col==='r'?(Math.random()<.5?'w':'b'):col;pMode='ai';resetPlay();
+function startAI(){if(_onlineGame){toast('Finish or resign the current game first','info');return;}var col=document.getElementById('aiCol').value;pColor=col==='r'?(Math.random()<.5?'w':'b'):col;pMode='ai';resetPlay();var psA=document.getElementById('pStake');if(psA)psA.textContent='';
   var mn=document.getElementById('meName'),on=document.getElementById('oppName');
   if(mn)mn.textContent='You ('+(pColor==='w'?'White':'Black')+')';if(on)on.textContent='AI';
   var st=document.getElementById('pSt');if(st)st.textContent=pColor==='w'?'Your move':'AI moves first...';
@@ -1958,7 +2085,7 @@ function buildFAQ(){
     item.appendChild(q);item.appendChild(a);list.appendChild(item);});
 }
 var LEGAL={
-  terms:{t:'Terms & Conditions',b:'<p><em>Last updated: October 2026</em></p><p>ChessWin7 (chesswin7.com) is operated by <strong>Zed-Alpha</strong>. By creating an account you agree to these terms.</p><h4>1. Eligibility</h4><p>You must be at least <strong>18 years old</strong> and allowed to take part in skill-based games with real-value deposits under the laws of the place where you live. You are responsible for checking this. One account per person.</p><h4>2. Skill-based play</h4><p>ChessWin7 is a skill-based chess platform. Game results depend only on the moves the players make. Every move is checked by our game server under the official rules of chess.</p><h4>3. Coins, deposits and withdrawals</h4><p>1 COIN = 1 USDT. Deposits are credited after we have verified the transaction on the blockchain. Withdrawals are described in the <a onclick="showLegal(\'withdrawals\')" style="color:var(--accent);cursor:pointer">Withdrawal Policy</a>. We will <strong>never</strong> ask you to pay any extra fee, tax or deposit to unlock a withdrawal.</p><h4>4. Fees</h4><p>A 5% platform fee applies to withdrawals and to prize pools of paid events, as shown on the relevant page before you confirm.</p><h4>5. Fair play</h4><p>Engines, bots, outside help, multiple accounts, collusion and any attempt to manipulate results are forbidden. See the <a onclick="showLegal(\'fairplay\')" style="color:var(--accent);cursor:pointer">Fair Play Policy</a>.</p><h4>6. Suspension</h4><p>We may suspend or close accounts involved in fraud, cheating or abuse. Balances linked to fraud may be withheld while we investigate.</p><h4>7. Changes and contact</h4><p>We may update these terms; the date above shows the latest version. Questions: <a href="mailto:Support.chesswin7@gmail.com" style="color:var(--accent)">Support.chesswin7@gmail.com</a></p>'},
+  terms:{t:'Terms & Conditions',b:'<p><em>Last updated: October 2026</em></p><p>ChessWin7 (chesswin7.com) is operated by <strong>Zed-Alpha</strong>. By creating an account you agree to these terms.</p><h4>1. Eligibility</h4><p>You must be at least <strong>18 years old</strong> and allowed to take part in skill-based games with real-value deposits under the laws of the place where you live. You are responsible for checking this. One account per person.</p><h4>2. Skill-based play</h4><p>ChessWin7 is a skill-based chess platform. Game results depend only on the moves the players make. Every move is checked by our game server under the official rules of chess.</p><h4>3. Coins, deposits and withdrawals</h4><p>1 COIN = 1 USDT. Deposits are credited after we have verified the transaction on the blockchain. Withdrawals are described in the <a onclick="showLegal(\'withdrawals\')" style="color:var(--accent);cursor:pointer">Withdrawal Policy</a>. We will <strong>never</strong> ask you to pay any extra fee, tax or deposit to unlock a withdrawal.</p><h4>4. Game entries</h4><p>Every online game against another player (vs Friend or Matchmaking) has an entry fee that both players pay. The entry is taken from your available balance when the game starts and is shown as locked (EXP) while the game is played.</p><ul><li><strong>Win:</strong> you receive both entries minus the platform fee (with the current 5% fee, a 5-COIN entry pays the winner 9.50 COINS).</li><li><strong>Loss:</strong> your entry goes to the winner.</li><li><strong>Draw:</strong> both entries are returned in full.</li><li><strong>Aborted game</strong> (it ends before both players have made a move): both entries are returned in full.</li><li>If a game is interrupted by a problem on our side, both entries are returned, unless the result was already decided, in which case it is paid out.</li></ul><p>Money waiting for a pending withdrawal cannot be used as an entry. Games against the AI are free practice and pay no prizes.</p><h4>5. Fees</h4><p>A platform fee (currently 5%) is taken from the prize pool of every won game and from withdrawals. The amounts are shown before you confirm. Draws and aborted games have no fee.</p><h4>6. Fair play</h4><p>Engines, bots, outside help, multiple accounts, collusion and any attempt to manipulate results are forbidden. See the <a onclick="showLegal(\'fairplay\')" style="color:var(--accent);cursor:pointer">Fair Play Policy</a>.</p><h4>7. Suspension</h4><p>We may suspend or close accounts involved in fraud, cheating or abuse. Balances linked to fraud may be withheld while we investigate.</p><h4>8. Changes and contact</h4><p>We may update these terms; the date above shows the latest version. Questions: <a href="mailto:Support.chesswin7@gmail.com" style="color:var(--accent)">Support.chesswin7@gmail.com</a></p>'},
   privacy:{t:'Privacy Policy',b:'<p><em>Last updated: October 2026</em></p><p>This policy explains what ChessWin7 (operated by <strong>Zed-Alpha</strong>) collects and why.</p><h4>What we collect</h4><p>Your email address, username, optional phone number, game results and rating, and for payments the transaction IDs and wallet addresses you submit.</p><h4>Why</h4><p>To run your account and games, process deposits and withdrawals, prevent fraud and answer support requests.</p><h4>Where it is stored</h4><p>Accounts and data are stored with Google Firebase. Games run on our game server. Live chat is provided by Crisp. Videos on the homepage are played by YouTube.</p><h4>What we never do</h4><p>We do not sell your personal data. Other players can see only your username, rating and results.</p><h4>Your choices</h4><p>You can ask us to correct or delete your account and data by emailing <a href="mailto:Support.chesswin7@gmail.com" style="color:var(--accent)">Support.chesswin7@gmail.com</a>. Some payment records may need to be kept for fraud prevention and legal reasons.</p>'},
   withdrawals:{t:'Withdrawal Policy',b:'<ul style="padding-left:18px;line-height:1.8"><li>Minimum withdrawal: <strong>10 USDT</strong>.</li><li>Your email address must be verified before you can withdraw.</li><li>A <strong>5% platform fee</strong> is deducted (e.g. 100 COINS → 95 USDT).</li><li>Requests are reviewed and paid within <strong>48 hours</strong>, to the wallet address you enter.</li><li>Please double-check the wallet address and network; blockchain transfers cannot be reversed.</li><li><strong>We never charge an extra fee, tax or deposit to release a withdrawal.</strong> If anyone asks you to pay to unlock your money, it is not us — contact <a href="mailto:Support.chesswin7@gmail.com" style="color:var(--accent)">Support.chesswin7@gmail.com</a>.</li></ul>'},
   fairplay:{t:'Fair Play Policy',b:'<p>Every move in every online game is validated by the ChessWin7 game server, and clocks are kept by the server, so results cannot be edited from a browser.</p><h4>Not allowed</h4><ul style="padding-left:18px;line-height:1.8"><li>Chess engines, bots or any outside help during a game</li><li>More than one account per person, or playing against yourself</li><li>Agreeing results with another player (collusion)</li><li>Exploiting bugs or interfering with the site</li></ul><p>Accounts that break these rules may be suspended. To report a player or a problem, email <a href="mailto:Support.chesswin7@gmail.com" style="color:var(--accent)">Support.chesswin7@gmail.com</a>.</p>'},
@@ -2291,16 +2418,28 @@ function buildNavbarAuth(data){
   updateNavBalance(coins);
 }
 function updateNavBalance(coins){
-  var nc=document.getElementById('navCoins');if(nc)nc.textContent=(coins||0).toLocaleString();
-  var pb=document.getElementById('pdropBal');if(pb)pb.textContent=(coins||0).toLocaleString();
+  var nc=document.getElementById('navCoins');if(nc)nc.textContent=fmtCoins(coins);
+  var pb=document.getElementById('pdropBal');if(pb)pb.textContent=fmtCoins(coins);
   var pn=document.getElementById('pdropName');if(pn&&window.currentUserData)pn.textContent=safeText(window.currentUserData.username||'');
+  loadNavExposure();
+  updEntryNote('f');updEntryNote('m');
 }
+// EXP = entries locked in games that are still being played
 function loadNavExposure(){
-  var exp=window._gameExposure||0;
-  var ne=document.getElementById('navExp');if(ne)ne.textContent=exp.toLocaleString();
+  var exp=window.currentUserData?Number(window.currentUserData.exposure||0):0;
+  var ne=document.getElementById('navExp');if(ne)ne.textContent=fmtCoins(exp);
 }
-function setGameExposure(amount){window._gameExposure=(window._gameExposure||0)+amount;loadNavExposure();}
-function releaseGameExposure(amount){window._gameExposure=Math.max(0,(window._gameExposure||0)-amount);loadNavExposure();}
+// Keeps balance, locked entries and stats live: the game server changes
+// them when a game starts and ends.
+var _userDocUnsub=null;
+function watchUserDoc(uid){
+  if(_userDocUnsub)_userDocUnsub();
+  _userDocUnsub=db.collection('users').doc(uid).onSnapshot(function(snap){
+    if(!snap.exists||!window.currentUser||window.currentUser.uid!==uid)return;
+    window.currentUserData=snap.data();
+    updateProfilePage(window.currentUserData);updateStatsPage(window.currentUserData);
+  },function(){});
+}
 function showAccountStatement(){
   if(!window.currentUser){openAuth('login');return;}
   var overlay=document.getElementById('stmtOverlay');
@@ -2308,18 +2447,39 @@ function showAccountStatement(){
   overlay.style.display='block';
   overlay.innerHTML='<div style="max-width:900px;margin:0 auto;padding:24px 20px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)"><div><h2 style="font-size:22px;font-weight:900">📋 Account Statement</h2><p style="font-size:13px;color:var(--muted);margin-top:4px">Complete transaction history</p></div><button onclick="document.getElementById(\'stmtOverlay\').style.display=\'none\'" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:700;font-family:Inter,sans-serif">✕ Close</button></div><div id="stmtContent" style="text-align:center;padding:40px 0;color:var(--muted)"><div style="font-size:40px;margin-bottom:12px">⏳</div>Loading...</div></div>';
   var stmtContent=document.getElementById('stmtContent');if(!stmtContent)return;
-  Promise.all([db.collection('deposits').where('userId','==',window.currentUser.uid).get(),db.collection('withdrawals').where('userId','==',window.currentUser.uid).get()])
+  // Game entries, wins and refunds come from the game server
+  var gameLines=window.currentUser.getIdToken().then(function(t){
+    return fetch(GAME_SERVER_URL+'/wallet/history',{headers:{Authorization:'Bearer '+t}}).then(function(r){return r.json();});
+  }).then(function(d){return (d&&d.lines)||[];}).catch(function(){return null;});
+  Promise.all([db.collection('deposits').where('userId','==',window.currentUser.uid).get(),db.collection('withdrawals').where('userId','==',window.currentUser.uid).get(),gameLines])
   .then(function(results){
     var deps=results[0].docs.map(function(d){return Object.assign({id:d.id,_type:'deposit'},d.data());});
     var wds=results[1].docs.map(function(d){return Object.assign({id:d.id,_type:'withdrawal'},d.data());});
-    var all=deps.concat(wds);all.sort(function(a,b){var ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;var tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;return ta-tb;});
+    var gamesFailed=results[2]===null;
+    var games=(results[2]||[]).filter(function(g){return g.type!=='loss';}).map(function(g){
+      return {id:g.matchId,_type:'game',_game:g,status:'approved',createdAt:{toMillis:function(){return g.at||0;},toDate:function(){return new Date(g.at||0);}}};
+    });
+    var all=deps.concat(wds).concat(games);all.sort(function(a,b){var ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;var tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;return ta-tb;});
+    var gameNet=games.reduce(function(a,e){return a+Number(e._game.amount||0);},0);
+    var inPlay=window.currentUserData?Number(window.currentUserData.exposure||0):0;
     var bal=0;var curCoins=window.currentUserData?window.currentUserData.coins||0:0;
     var totalDep=deps.filter(function(d){return d.status==='approved';}).reduce(function(a,d){return a+(d.amount||0);},0);
     var totalWd=wds.filter(function(w){return w.status==='approved';}).reduce(function(a,w){return a+(w.amount||0);},0);
     var pendingCount=all.filter(function(e){return e.status==='pending';}).length;
-    var rows=all.map(function(e){var cr=0,dr=0;if(e._type==='deposit'&&e.status==='approved')cr=e.amount;if(e._type==='withdrawal'&&e.status==='approved')dr=e.amount;bal+=cr-dr;var dt=e.createdAt&&e.createdAt.toDate?e.createdAt.toDate().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';var statusHtml=e.status==='approved'?'<span style="background:rgba(0,231,1,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✓ Approved</span>':e.status==='pending'?'<span style="background:rgba(240,165,0,.15);color:#f0a500;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">⏳ Pending</span>':'<span style="background:rgba(249,56,72,.15);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✗ Rejected</span>';var ref=esc(e._type==='deposit'?(e.txid?e.txid.substring(0,16)+'...':'—'):(e.wallet?e.wallet.substring(0,16)+'...':'—'));return'<tr style="border-bottom:1px solid var(--border)"><td style="padding:12px 16px;color:var(--muted);font-size:12px">'+dt+'</td><td style="padding:12px 16px"><span style="font-weight:700;color:'+(e._type==='deposit'?'var(--green)':'var(--red)')+'">'+( e._type==='deposit'?'💰 Deposit':'💸 Withdrawal')+'</span></td><td style="padding:12px 16px;color:var(--green);font-weight:800">'+(cr>0?'+'+esc(cr):'')+'</td><td style="padding:12px 16px;color:var(--red);font-weight:800">'+(dr>0?'-'+esc(dr):'')+'</td><td style="padding:12px 16px;color:var(--accent);font-weight:800">'+esc(bal)+'</td><td style="padding:12px 16px">'+statusHtml+'</td><td style="padding:12px 16px;color:var(--muted);font-size:11px">'+ref+'</td></tr>';});
+    var GAME_LBL={entry:'♟ Game entry',win:'🏆 Game won',refund:'↩ Entry returned'};
+    function crDr(e){if(e._type==='game'){var a=Number(e._game.amount||0);return a>0?[a,0]:[0,-a];}
+      return [e._type==='deposit'&&e.status==='approved'?Number(e.amount||0):0,e._type==='withdrawal'&&e.status==='approved'?Number(e.amount||0):0];}
+    // Balance after each line, worked back from the current balance so the
+    // newest lines always match it
+    var balAfter=[],run=curCoins;
+    for(var bi=all.length-1;bi>=0;bi--){balAfter[bi]=run;var cd=crDr(all[bi]);run=Math.round((run-cd[0]+cd[1])*100)/100;}
+    var rows=all.map(function(e,idx){var cd0=crDr(e),cr=cd0[0],dr=cd0[1];bal=balAfter[idx];
+      if(e._type==='game'){var g=e._game;
+        var gdt=g.at?new Date(g.at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+        return'<tr style="border-bottom:1px solid var(--border)"><td style="padding:12px 16px;color:var(--muted);font-size:12px">'+gdt+'</td><td style="padding:12px 16px"><span style="font-weight:700;color:'+(g.type==='entry'?'var(--red)':'var(--green)')+'">'+esc(GAME_LBL[g.type]||g.type)+'</span><div style="font-size:11px;color:var(--muted)">vs '+esc(g.opponent||'—')+(g.reason?' · '+esc(g.reason):'')+'</div></td><td style="padding:12px 16px;color:var(--green);font-weight:800">'+(cr>0?'+'+esc(fmtCoins(cr)):'')+'</td><td style="padding:12px 16px;color:var(--red);font-weight:800">'+(dr>0?'-'+esc(fmtCoins(dr)):'')+'</td><td style="padding:12px 16px;color:var(--accent);font-weight:800">'+esc(fmtCoins(bal))+'</td><td style="padding:12px 16px"><span style="background:rgba(0,231,1,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✓ Done</span></td><td style="padding:12px 16px;color:var(--muted);font-size:11px">'+esc(String(g.matchId||'').split('-')[0])+'</td></tr>';}
+      var dt=e.createdAt&&e.createdAt.toDate?e.createdAt.toDate().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';var statusHtml=e.status==='approved'?'<span style="background:rgba(0,231,1,.15);color:var(--green);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✓ Approved</span>':e.status==='pending'?'<span style="background:rgba(240,165,0,.15);color:#f0a500;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">⏳ Pending</span>':'<span style="background:rgba(249,56,72,.15);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✗ Rejected</span>';var ref=esc(e._type==='deposit'?(e.txid?e.txid.substring(0,16)+'...':'—'):(e.wallet?e.wallet.substring(0,16)+'...':'—'));return'<tr style="border-bottom:1px solid var(--border)"><td style="padding:12px 16px;color:var(--muted);font-size:12px">'+dt+'</td><td style="padding:12px 16px"><span style="font-weight:700;color:'+(e._type==='deposit'?'var(--green)':'var(--red)')+'">'+( e._type==='deposit'?'💰 Deposit':'💸 Withdrawal')+'</span></td><td style="padding:12px 16px;color:var(--green);font-weight:800">'+(cr>0?'+'+esc(cr):'')+'</td><td style="padding:12px 16px;color:var(--red);font-weight:800">'+(dr>0?'-'+esc(dr):'')+'</td><td style="padding:12px 16px;color:var(--accent);font-weight:800">'+esc(fmtCoins(bal))+'</td><td style="padding:12px 16px">'+statusHtml+'</td><td style="padding:12px 16px;color:var(--muted);font-size:11px">'+ref+'</td></tr>';});
     var el=document.getElementById('stmtContent');if(!el)return;
-    el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px"><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--accent)">🪙 '+curCoins.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Current Balance</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--green)">+'+totalDep.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Total Deposited</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--red)">-'+totalWd.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Total Withdrawn</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#f0a500">'+pendingCount+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Pending</div></div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px"><thead><tr style="background:var(--surface2)"><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Date</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Type</th><th style="padding:12px 16px;font-size:11px;color:var(--green)">Credit</th><th style="padding:12px 16px;font-size:11px;color:var(--red)">Debit</th><th style="padding:12px 16px;font-size:11px;color:var(--accent)">Balance</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Status</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Ref</th></tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No transactions yet</td></tr>')+'</tbody></table></div></div>';
+    el.innerHTML=(gamesFailed?'<div style="background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);color:#f0a500;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;text-align:left">Game history could not be loaded right now (the game server may be waking up). Please try again in a minute.</div>':'')+'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px"><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--accent)">🪙 '+curCoins.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Current Balance</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#f93848">⚡ '+fmtCoins(inPlay)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">In Play (locked)</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:'+(gameNet<0?'var(--red)':'var(--green)')+'">'+(gameNet>0?'+':'')+fmtCoins(gameNet)+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Games (net)</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--green)">+'+totalDep.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Total Deposited</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:var(--red)">-'+totalWd.toLocaleString()+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Total Withdrawn</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:900;color:#f0a500">'+pendingCount+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;font-weight:700;text-transform:uppercase">Pending</div></div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px"><thead><tr style="background:var(--surface2)"><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Date</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Type</th><th style="padding:12px 16px;font-size:11px;color:var(--green)">Credit</th><th style="padding:12px 16px;font-size:11px;color:var(--red)">Debit</th><th style="padding:12px 16px;font-size:11px;color:var(--accent)">Balance</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Status</th><th style="padding:12px 16px;text-align:left;font-size:11px;color:var(--muted)">Ref</th></tr></thead><tbody>'+(rows.length?rows.join(''):'<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No transactions yet</td></tr>')+'</tbody></table></div></div>';
   }).catch(function(e){var el=document.getElementById('stmtContent');if(el)el.innerHTML='<p style="color:var(--red);padding:20px">Error loading statement: '+esc(e.message)+'</p>';});
 }
 window.currentUser=null;window.currentUserData=null;
@@ -2339,12 +2499,15 @@ auth.onAuthStateChanged(function(user){
       updateProfilePage(data);updateStatsPage(data);loadLB();updateMobDrawer(user,data);
       loadPlatformWallets();loadPlatformSettings();
       if(snap.exists)syncAccountDocs(user,data);
+      // also when the profile doc doesn't exist yet (a sign-up still writing it)
+      watchUserDoc(user.uid);
       // Reconnect after a page reload so the server can resume the game
       // (otherwise the 60s abandonment timer forfeits it)
       if(hasActiveGame())connectSocket();
     });
   }else{
     window.currentUserData=null;
+    if(_userDocUnsub){_userDocUnsub();_userDocUnsub=null;}
     if(socket){try{socket.disconnect();}catch(e){}socket=null;}
     if(sidebar)sidebar.classList.remove('show');if(gNav)gNav.style.display='flex';var pb2=document.getElementById('promoBtn');if(pb2)pb2.style.display='';
     updateMobDrawer(null,null);
@@ -2853,6 +3016,7 @@ function setLang(code){
   setText('arenaTitle',tr.arenaTitle);
   setText('arenaBadge1',tr.arenaBadge1);setText('arenaBadge2',tr.arenaBadge2);setText('arenaBadge3',tr.arenaBadge3);
   document.querySelectorAll('.arena-btn').forEach(function(btn){btn.textContent=tr.arenaBtn;});
+  document.querySelectorAll('.entryLbl').forEach(function(el){if(tr.arenaEntryFee)el.textContent=tr.arenaEntryFee;});
   document.querySelectorAll('[data-lbl="entry"]').forEach(function(el){el.textContent=tr.arenaEntryFee;});
   document.querySelectorAll('[data-lbl="prize"]').forEach(function(el){el.textContent=tr.arenaPrize;});
   document.querySelectorAll('[data-lbl="time"]').forEach(function(el){el.textContent=tr.arenaTimeCtrl;});
@@ -3061,6 +3225,7 @@ function loadSiteContent(){
 }
 document.addEventListener('DOMContentLoaded',function(){
   loadSiteContent();
+  fillEntrySelects();loadGameSettings();
   var savedLang='en';
   try{savedLang=localStorage.getItem('cw7lang')||'en';}catch(e){}
   activeLang=savedLang;
