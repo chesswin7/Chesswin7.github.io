@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>ChessWin7 Blog</title>
+  <link>https://chesswin7.com/blog/</link>
+  <atom:link href="https://chesswin7.com/blog/feed.xml" rel="self" type="application/rss+xml"/>
+  <description>Chess tips, openings, checkmate patterns and guides from the ChessWin7 team.</description>
+  <language>en</language>
+  <lastBuildDate>Wed, 04 Nov 2026 09:00:00 +0000</lastBuildDate>
+  <image><url>https://chesswin7.com/favicon-192.png</url><title>ChessWin7 Blog</title><link>https://chesswin7.com/blog/</link></image>
+  <item>
+    <title>10 Chess Tips Every Beginner Should Know</title>
+    <link>https://chesswin7.com/blog/10-chess-tips-for-beginners/</link>
+    <guid isPermaLink="true">https://chesswin7.com/blog/10-chess-tips-for-beginners/</guid>
+    <pubDate>Wed, 04 Nov 2026 09:00:00 +0000</pubDate>
+    <description>Control the centre, develop your pieces, castle early and check every capture: ten simple habits that win more games.</description>
+    <enclosure url="https://chesswin7.com/img/blog/tips.jpg" type="image/jpeg" length="68487"/>
+  </item>
+  <item>
+    <title>How to Win More Blitz Chess Games</title>
+    <link>https://chesswin7.com/blog/how-to-win-at-blitz-chess/</link>
+    <guid isPermaLink="true">https://chesswin7.com/blog/how-to-win-at-blitz-chess/</guid>
+    <pubDate>Wed, 04 Nov 2026 09:00:00 +0000</pubDate>
+    <description>Blitz is about good moves made in time. Eight practical tips to manage your clock and stop losing won positions.</description>
+    <enclosure url="https://chesswin7.com/img/blog/blitz.jpg" type="image/jpeg" length="69586"/>
+  </item>
+  <item>
+    <title>5 Best Chess Openings for Beginners</title>
+    <link>https://chesswin7.com/blog/best-chess-openings-for-beginners/</link>
+    <guid isPermaLink="true">https://chesswin7.com/blog/best-chess-openings-for-beginners/</guid>
+    <pubDate>Wed, 04 Nov 2026 09:00:00 +0000</pubDate>
+    <description>The Italian Game, Queen’s Gambit, London System, Sicilian and Caro-Kann — what they are and the ideas behind them.</description>
+    <enclosure url="https://chesswin7.com/img/blog/openings.jpg" type="image/jpeg" length="74431"/>
+  </item>
+  <item>
+    <title>6 Checkmate Patterns Every Chess Player Should Know</title>
+    <link>https://chesswin7.com/blog/checkmate-patterns/</link>
+    <guid isPermaLink="true">https://chesswin7.com/blog/checkmate-patterns/</guid>
+    <pubDate>Wed, 04 Nov 2026 09:00:00 +0000</pubDate>
+    <description>Back-rank, smothered, Anastasia&#x27;s, Arabian and more — learn to spot the mates that come up again and again.</description>
+    <enclosure url="https://chesswin7.com/img/blog/checkmates.jpg" type="image/jpeg" length="57963"/>
+  </item>
+  <item>
+    <title>How Game Entries Work on ChessWin7</title>
+    <link>https://chesswin7.com/blog/how-game-entries-work/</link>
+    <guid isPermaLink="true">https://chesswin7.com/blog/how-game-entries-work/</guid>
+    <pubDate>Wed, 04 Nov 2026 09:00:00 +0000</pubDate>
+    <description>Entry fees, prizes, draws, refunds and your EXP balance — exactly how money moves in a ChessWin7 game.</description>
+    <enclosure url="https://chesswin7.com/img/blog/entries.jpg" type="image/jpeg" length="68868"/>
+  </item>
+  <item>
+    <title>How We Keep Every Game Fair</title>
+    <link>https://chesswin7.com/blog/fair-play-on-chesswin7/</link>
+    <guid isPermaLink="true">https://chesswin7.com/blog/fair-play-on-chesswin7/</guid>
+    <pubDate>Wed, 04 Nov 2026 09:00:00 +0000</pubDate>
+    <description>Server-checked moves, server clocks and results only the server can write — how fair play works on ChessWin7.</description>
+    <enclosure url="https://chesswin7.com/img/blog/fair-play.jpg" type="image/jpeg" length="71951"/>
+  </item>
+</channel>
+</rss>
